@@ -13,7 +13,7 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
     memory = H2gb::Vault::Memory.new()
     memory.insert(address: 0x00, data: "A", length: 0x01)
 
-    result = memory.get(address: 0x00, length: 0xFF)
+    result = memory.get(address: 0x00, length: 0x01)
     expected = [{
       :address => 0x00,
       :data => "A",

@@ -8,77 +8,89 @@
 
 module H2gb
   module Vault
+    # This is an entry for a single memory address, not a set of addresses.
+    class MemoryEntry
+      attr_reader :address, :entry
+
+      def initialize(address:)
+        @address = address
+        @revision = 0
+        @revisions = []
+      end
+
+      def _revision(revision)
+        if revision == -1
+          return @revision
+        end
+        return revision
+      end
+
+      def get(revision: -1)
+        return @revisions[_revision(revision)]
+      end
+
+      def set(revision:, entry:)
+        @revision = revision
+        @revisions[@revision] = entry
+      end
+
+      def history()
+        return @revisions
+      end
+    end
+
     class Memory
       def initialize()
         @memory = {}
         @revision = 0
       end
 
-      def _set_single(address:, entry:)
-        if @memory[address].nil?
-          @memory[address] = []
-        end
-
-        # Don't add a new entry if it isn't changing
-        if @memory[address][-1] == entry
-          return
-        end
-
-        @memory[address] << entry
-      end
-
-      def _delete_entry(entry:)
-        entry[:address].upto(entry[:address] + entry[:length] - 1) do |i|
-          _set_single(address:i, entry:nil)
-        end
-      end
-
-      def _insert_entry(entry:)
-        entry[:address].upto(entry[:address] + entry[:length] - 1) do |i|
-          _set_single(address:i, entry:entry)
-        end
-      end
-
-      def insert(address:, data:, length:)
+      def insert(address:, length:, data:)
+        # TODO: make the revisions increment in a set
         @revision += 1
-
-        entry = {
-          :address => address,
-          :data => data,
-          :length => length,
-        }
 
         # Remove anything that's already there
         address.upto(address + length - 1) do |i|
-          if not @memory[i].nil? and not @memory[i][-1].nil?
-            _delete_entry(entry: @memory[i][-1])
+          if @memory[i] && @memory[i].get()
+            current_entry = @memory[i].get()
+            current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
+              @memory[j].set(revision: @revision, entry: nil)
+            end
           end
         end
 
-        _insert_entry(entry: entry)
-      end
+        # Put the new entry into each address
+        address.upto(address + length - 1) do |i|
+          if @memory[i].nil?
+            @memory[i] = MemoryEntry.new(address: i)
+          end
 
-      def delete(address:)
-        @revision += 1
-        # TODO
+          @memory[i].set(revision: @revision, entry: {
+            :address => address,
+            :length => length,
+            :data => data,
+          })
+        end
       end
 
       def get(address:, length:)
         result = []
         i = address
         while(i < address + length)
-          # If nothing is there, just go to the next memory
-          if @memory[i].nil? or @memory[i][-1].nil?
-            i = i + 1
+          if(@memory[i].nil?)
+            i += 1
             next
           end
 
-          # If something IS there, add it to the result...
-          entry = @memory[i][-1]
+          entry = @memory[i].get()
+          if not entry
+            i += 1
+            next
+          end
 
           result << entry
 
-          # ...and go to the address immediately following
+          # Go to the address immediately following
           i = entry[:address] + entry[:length]
         end
 

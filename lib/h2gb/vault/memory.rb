@@ -15,7 +15,7 @@ module H2gb
       def initialize(address:)
         @address = address
         @revision = 0
-        @revisions = []
+        @revisions = {}
       end
 
       def _revision(revision)
@@ -34,6 +34,20 @@ module H2gb
         @revisions[@revision] = entry
       end
 
+      def rollback(revision:)
+        if @revision <= revision
+          return
+        end
+
+        @revision = 0
+        @revisions.keys.each() do |possible_rev|
+          if possible_rev > revision
+            return @revision
+          end
+          @revision = possible_rev
+        end
+      end
+
       def history()
         return @revisions
       end
@@ -47,42 +61,48 @@ module H2gb
         @mutex = Mutex.new()
       end
 
-#      def transaction()
-#        @mutex.synchronize() do
-#          @in_transaction = true
-#          @revision += 1
-#          yield
-#        end
-#      end
+      def transaction()
+        @mutex.synchronize() do
+          @in_transaction = true
+          @revision += 1
+          yield
+        end
+      end
+
+      def _insert_internal(address:, length:, data:)
+
+        # Remove anything that's already there
+        address.upto(address + length - 1) do |i|
+          if @memory[i] && @memory[i].get()
+            current_entry = @memory[i].get()
+            current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
+              @memory[j].set(revision: @revision, entry: nil)
+            end
+          end
+        end
+
+        # Put the new entry into each address
+        address.upto(address + length - 1) do |i|
+          if @memory[i].nil?
+            @memory[i] = MemoryEntry.new(address: i)
+          end
+
+          @memory[i].set(revision: @revision, entry: {
+            :address => address,
+            :length => length,
+            :data => data,
+          })
+        end
+      end
 
       def insert(address:, length:, data:)
+        if @in_transaction
+          return _insert_internal(address: address, length: length, data: data)
+        end
+
         @mutex.synchronize() do
-          if not @in_transaction
-            @revision += 1
-          end
-
-          # Remove anything that's already there
-          address.upto(address + length - 1) do |i|
-            if @memory[i] && @memory[i].get()
-              current_entry = @memory[i].get()
-              current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
-                @memory[j].set(revision: @revision, entry: nil)
-              end
-            end
-          end
-
-          # Put the new entry into each address
-          address.upto(address + length - 1) do |i|
-            if @memory[i].nil?
-              @memory[i] = MemoryEntry.new(address: i)
-            end
-
-            @memory[i].set(revision: @revision, entry: {
-              :address => address,
-              :length => length,
-              :data => data,
-            })
-          end
+          @revision += 1
+          return _insert_internal(address: address, length: length, data: data)
         end
       end
 
@@ -108,6 +128,21 @@ module H2gb
         end
 
         return result
+      end
+
+      def rollback(revision:)
+        # TODO: This is not going to scale well
+        if revision == 0
+          return
+        end
+
+        @memory.each_value() do |memory_entry|
+          memory_entry.rollback(revision: revision)
+        end
+      end
+
+      def undo()
+        rollback(revision: @revision - 1)
       end
     end
   end

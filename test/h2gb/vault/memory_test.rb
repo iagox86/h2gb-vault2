@@ -210,4 +210,105 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
 
     assert_equal(expected, result)
   end
+
+  def test_undo()
+    memory = H2gb::Vault::Memory.new()
+    memory.insert(address: 0x00, data: "A", length: 0x02)
+    memory.insert(address: 0x02, data: "B", length: 0x02)
+    memory.undo()
+
+    result = memory.get(address: 0x00, length: 0xFF)
+
+    expected = [
+      {
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+      },
+    ]
+
+    assert_equal(expected, result)
+  end
+
+  def test_overwrite_undo()
+    memory = H2gb::Vault::Memory.new()
+    memory.insert(address: 0x00, data: "A", length: 0x02)
+
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+      },
+    ]
+    assert_equal(expected, result)
+
+    memory.insert(address: 0x01, data: "B", length: 0x02)
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :address => 0x01,
+        :data => "B",
+        :length => 0x02,
+      },
+    ]
+    assert_equal(expected, result)
+
+    memory.undo()
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+      },
+    ]
+    assert_equal(expected, result)
+  end
+
+  def test_undo_transaction()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
+
+    memory.transaction() do
+      memory.insert(address: 0x01, data: "C", length: 0x02)
+      memory.insert(address: 0x03, data: "D", length: 0x02)
+    end
+
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :address => 0x01,
+        :data => "C",
+        :length => 0x02,
+      },
+      {
+        :address => 0x03,
+        :data => "D",
+        :length => 0x02,
+      },
+    ]
+    assert_equal(expected, result)
+
+    memory.undo()
+
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+      },
+      {
+        :address => 0x02,
+        :data => "B",
+        :length => 0x02,
+      },
+    ]
+    assert_equal(expected, result)
+  end
 end

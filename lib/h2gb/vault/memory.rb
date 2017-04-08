@@ -43,33 +43,46 @@ module H2gb
       def initialize()
         @memory = {}
         @revision = 0
+        @in_transaction = false
+        @mutex = Mutex.new()
       end
 
-      def insert(address:, length:, data:)
-        # TODO: make the revisions increment in a set
-        @revision += 1
+#      def transaction()
+#        @mutex.synchronize() do
+#          @in_transaction = true
+#          @revision += 1
+#          yield
+#        end
+#      end
 
-        # Remove anything that's already there
-        address.upto(address + length - 1) do |i|
-          if @memory[i] && @memory[i].get()
-            current_entry = @memory[i].get()
-            current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
-              @memory[j].set(revision: @revision, entry: nil)
+      def insert(address:, length:, data:)
+        @mutex.synchronize() do
+          if not @in_transaction
+            @revision += 1
+          end
+
+          # Remove anything that's already there
+          address.upto(address + length - 1) do |i|
+            if @memory[i] && @memory[i].get()
+              current_entry = @memory[i].get()
+              current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
+                @memory[j].set(revision: @revision, entry: nil)
+              end
             end
           end
-        end
 
-        # Put the new entry into each address
-        address.upto(address + length - 1) do |i|
-          if @memory[i].nil?
-            @memory[i] = MemoryEntry.new(address: i)
+          # Put the new entry into each address
+          address.upto(address + length - 1) do |i|
+            if @memory[i].nil?
+              @memory[i] = MemoryEntry.new(address: i)
+            end
+
+            @memory[i].set(revision: @revision, entry: {
+              :address => address,
+              :length => length,
+              :data => data,
+            })
           end
-
-          @memory[i].set(revision: @revision, entry: {
-            :address => address,
-            :length => length,
-            :data => data,
-          })
         end
       end
 

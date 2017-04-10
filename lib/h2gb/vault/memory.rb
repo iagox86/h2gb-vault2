@@ -24,6 +24,9 @@ module H2gb
       class MemoryEntry
         attr_reader :address, :entry
 
+        STATE_DELETED = 0
+        STATE_VALID = 1
+
         def initialize(address:)
           @address = address
           @revision = 0
@@ -43,7 +46,7 @@ module H2gb
         def get(revision: -1)
           revision = _revision(revision)
           entry = @history[revision]
-          if entry.nil?
+          if entry.nil? or entry[:state] == STATE_DELETED
             return {
               revision: revision,
               address: address,
@@ -68,6 +71,7 @@ module H2gb
           @revision = revision
           @max_revision = revision
           @history[@revision] = {
+            state: STATE_VALID,
             address: address,
             length: length,
             data: data,
@@ -79,7 +83,12 @@ module H2gb
         def delete(revision:)
           @revision = revision
           @max_revision = revision
-          @history[@revision] = nil
+          @history[@revision] = {
+            state: STATE_DELETED,
+            address: @address,
+            length: 1,
+            data: nil,
+          }
         end
 
         public
@@ -116,8 +125,8 @@ module H2gb
           revision = _revision(revision)
           entry = @history[revision]
 
-          if entry.nil? or entry[:data].nil?
-            return "%p :: deleted" % @address
+          if entry.nil? or entry[:state] == STATE_DELETED
+            return "%p [%d] :: deleted" % [@address, @revision]
           end
 
           return "%p [%d] :: address = %p, length = 0x%x" % [@address, @revision, entry[:address], entry[:length]]

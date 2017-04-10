@@ -621,6 +621,315 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
     assert_equal(expected, result)
   end
 
+  def test_redo()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
+    memory.undo()
+    memory.redo()
+
+    result = memory.get(address: 0x00, length: 0xFF)
+
+    expected = [
+      {
+        :revision => 0x01,
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x02,
+        :address => 0x02,
+        :data => "B",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+
+    assert_equal(expected, result)
+  end
+
+  def test_redo_multiple_steps()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x04, data: "C", length: 0x02)
+    end
+
+    memory.undo()
+    memory.undo()
+    memory.undo()
+
+    result = memory.get(address: 0x00, length: 0xFF)
+    assert_equal([], result)
+
+    memory.redo()
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :revision => 0x01,
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+    assert_equal(expected, result)
+
+    memory.redo()
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :revision => 0x01,
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x02,
+        :address => 0x02,
+        :data => "B",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+    assert_equal(expected, result)
+
+    memory.redo()
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :revision => 0x01,
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x02,
+        :address => 0x02,
+        :data => "B",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x03,
+        :address => 0x04,
+        :data => "C",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+    assert_equal(expected, result)
+  end
+
+  def test_redo_then_set()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
+    memory.undo()
+    memory.redo()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "C", length: 0x02)
+    end
+
+    result = memory.get(address: 0x00, length: 0xFF)
+
+    expected = [
+      {
+        :revision => 0x03,
+        :address => 0x00,
+        :data => "C",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x02,
+        :address => 0x02,
+        :data => "B",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+
+    assert_equal(expected, result)
+  end
+
+  def test_redo_goes_away_after_edit()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x04, data: "C", length: 0x02)
+    end
+    memory.undo()
+    memory.undo()
+    memory.undo()
+
+    result = memory.get(address: 0x00, length: 0xFF)
+    assert_equal([], result)
+
+    memory.redo()
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :revision => 0x01,
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+    assert_equal(expected, result)
+
+    memory.transaction() do
+      memory.insert(address: 0x06, data: "D", length: 0x02)
+    end
+
+    memory.redo() # Should do nothing
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :revision => 0x01,
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x02,
+        :address => 0x06,
+        :data => "D",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+    assert_equal(expected, result)
+  end
+
+  def test_redo_too_much()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.undo()
+    memory.undo()
+    memory.redo()
+    memory.redo()
+    memory.redo()
+    memory.redo()
+
+    memory.transaction() do
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
+    result = memory.get(address: 0x00, length: 0xFF)
+
+    expected = [
+      {
+        :revision => 0x01,
+        :address => 0x00,
+        :data => "A",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x02,
+        :address => 0x02,
+        :data => "B",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+
+    assert_equal(expected, result)
+  end
+
+  def test_redo_overwrite()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "B", length: 0x01)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "C", length: 0x03)
+    end
+
+    memory.undo()
+    memory.undo()
+    memory.undo()
+    memory.redo()
+    memory.redo()
+    memory.redo()
+
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :revision => 0x03,
+        :address => 0x00,
+        :data => "C",
+        :length => 0x03,
+        :refs => nil,
+      },
+    ]
+    assert_equal(expected, result)
+  end
+
+  def test_transaction_redo()
+    memory = H2gb::Vault::Memory.new()
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
+
+    memory.transaction() do
+      memory.insert(address: 0x01, data: "C", length: 0x02)
+      memory.insert(address: 0x03, data: "D", length: 0x02)
+    end
+
+    memory.undo()
+    memory.redo()
+
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = [
+      {
+        :revision => 0x02,
+        :address => 0x01,
+        :data => "C",
+        :length => 0x02,
+        :refs => nil,
+      },
+      {
+        :revision => 0x02,
+        :address => 0x03,
+        :data => "D",
+        :length => 0x02,
+        :refs => nil,
+      },
+    ]
+    assert_equal(expected, result)
+  end
+
   def test_memory_entry_is_private
     assert_raises(NameError) do
       H2gb::Vault::Memory::MemoryEntry.new(address: 0)

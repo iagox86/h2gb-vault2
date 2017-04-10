@@ -229,9 +229,8 @@ module H2gb
 
       public
       def redo()
-        @revision = revision + 1
         @mutex.synchronize() do
-          @revision = rollback(revision: @revision)
+          @revision = rollback(revision: @revision + 1)
         end
       end
 

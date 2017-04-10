@@ -27,6 +27,7 @@ module H2gb
         def initialize(address:)
           @address = address
           @revision = 0
+          @max_revision = 0
           @history = {}
         end
 
@@ -65,6 +66,7 @@ module H2gb
         def set(revision:, address:, length:, data:, refs:)
           # TODO: Limit the number of revisions that we store
           @revision = revision
+          @max_revision = revision
           @history[@revision] = {
             address: address,
             length: length,
@@ -76,24 +78,52 @@ module H2gb
         public
         def delete(revision:)
           @revision = revision
+          @max_revision = revision
           @history[@revision] = nil
         end
 
         public
         def rollback(revision:)
-          if @revision <= revision
-            return
+          if revision > @max_revision
+            revision = @max_revision
           end
 
-          @revision = 0
-          @history.keys.each() do |possible_rev|
-            if possible_rev > revision
-              return @revision
-            end
-            @revision = possible_rev
+          if revision < 0
+            revision = 0
           end
+
+          # If we're already there, nothing to do (happens if they undo or redo
+          # too far)
+          if revision == @revision
+            return @revision
+          end
+
+          # Always find the closest-revision-without-going-over, whether it's
+          # for undo or redo
+          @revision = 0
+          revision.step(0, -1) do |i|
+            if @history[i]
+              @revision = i
+              break
+            end
+          end
+
+          return @revision
+        end
+
+        public
+        def to_s(revision: -1)
+          revision = _revision(revision)
+          entry = @history[revision]
+
+          if entry.nil? or entry[:data].nil?
+            return "%p :: deleted" % @address
+          end
+
+          return "%p [%d] :: address = %p, length = 0x%x" % [@address, @revision, entry[:address], entry[:length]]
         end
       end
+
       # Make the MemoryEntry class private so people can't accidentally use it.
       private_constant :MemoryEntry
 
@@ -180,19 +210,34 @@ module H2gb
 
       public
       def rollback(revision:)
-        if revision == 0
-          return
+        # TODO: This is not going to scale well
+        max_revision = 0
+        @memory.each_value() do |memory_entry|
+          new_revision = memory_entry.rollback(revision: revision)
+          max_revision = [new_revision, max_revision].max()
         end
 
-        # TODO: This is not going to scale well
-        @memory.each_value() do |memory_entry|
-          memory_entry.rollback(revision: revision)
-        end
+        return max_revision
       end
 
       public
       def undo()
-        rollback(revision: @revision - 1)
+        @mutex.synchronize() do
+          @revision = rollback(revision: @revision - 1)
+        end
+      end
+
+      public
+      def redo()
+        @revision = revision + 1
+        @mutex.synchronize() do
+          @revision = rollback(revision: @revision)
+        end
+      end
+
+      public
+      def to_s()
+        return (@memory.map() { |m, e| e.to_s() }).join("\n")
       end
     end
   end

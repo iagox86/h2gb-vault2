@@ -85,9 +85,6 @@ module H2gb
           @max_revision = revision
           @history[@revision] = {
             state: STATE_DELETED,
-            address: @address,
-            length: 1,
-            data: nil,
           }
         end
 
@@ -142,6 +139,7 @@ module H2gb
         @revision = 0
         @in_transaction = false
         @mutex = Mutex.new()
+        @redoable_steps = 0
       end
 
       public
@@ -162,6 +160,9 @@ module H2gb
         if not @in_transaction
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
+
+        # Once we insert, we want to turn off any 'redo' steps
+        @redoable_steps = 0
 
         # Remove anything that's already there
         address.upto(address + length - 1) do |i|
@@ -234,13 +235,19 @@ module H2gb
         @mutex.synchronize() do
           @revision = rollback(revision: @revision - 1)
         end
+        @redoable_steps += 1
       end
 
       public
       def redo()
+        if @redoable_steps == 0
+          return
+        end
+
         @mutex.synchronize() do
           @revision = rollback(revision: @revision + 1)
         end
+        @redoable_steps -= 1
       end
 
       public

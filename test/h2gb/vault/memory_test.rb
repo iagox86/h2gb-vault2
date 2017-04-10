@@ -781,14 +781,38 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
     memory.transaction() do
       memory.insert(address: 0x04, data: "C", length: 0x02)
     end
+
+    puts()
+    puts("Initial:")
+    puts(memory)
+
     memory.undo()
+
+    puts()
+    puts("Undo 1:")
+    puts(memory)
+
     memory.undo()
+
+    puts()
+    puts("Undo 2:")
+    puts(memory)
+
     memory.undo()
+
+    puts()
+    puts("Undo 3:")
+    puts(memory)
 
     result = memory.get(address: 0x00, length: 0xFF)
     assert_equal([], result)
 
     memory.redo()
+
+    puts()
+    puts("Redo 1:")
+    puts(memory)
+
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [
       {
@@ -805,7 +829,16 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
       memory.insert(address: 0x06, data: "D", length: 0x02)
     end
 
+    puts()
+    puts("Insert")
+    puts(memory)
+
     memory.redo() # Should do nothing
+
+    puts()
+    puts("Redo 2:")
+    puts(memory)
+
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [
       {

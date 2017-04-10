@@ -963,9 +963,17 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
     assert_equal(expected, result)
   end
 
-  def test_memory_entry_is_private
+  def test_memory_entry_is_private()
     assert_raises(NameError) do
       H2gb::Vault::Memory::MemoryEntry.new(address: 0)
     end
+  end
+
+  # TODO: I don't think get_changes_since will work, since @revision jumps
+  # around. Now that (as of the time of this commenting) I have all my undo and
+  # redo tests passing, and a good idea of where the pain points are, I think
+  # I have to re-design the revision code so that the revision number is
+  # constantly incrementing.
+  def test_get_changes_since()
   end
 end

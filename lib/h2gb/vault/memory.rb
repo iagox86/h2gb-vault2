@@ -9,6 +9,9 @@
 module H2gb
   module Vault
     class Memory
+      class MemoryError < RuntimeError
+      end
+
       ##
       # Store an entry for a single memory address. That includes arbitrary data
       # as well as revision history.
@@ -113,13 +116,20 @@ module H2gb
 
       private
       def _insert_internal(address:, length:, data:, refs:)
+      end
+
+      public
+      def insert(address:, length:, data:, refs: nil) # TODO: refs
+        if not @in_transaction
+          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
+        end
+
         # Remove anything that's already there
         address.upto(address + length - 1) do |i|
           # If there's something there, and it isn't nil...
           if @memory[i]
             # Remove each address that that memory entry covers
             current_entry = @memory[i].get()
-            # TODO: Maybe add current_entry.each_address()?
             current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
               @memory[j].delete(revision: @revision)
             end
@@ -140,19 +150,6 @@ module H2gb
             data: data,
             refs: refs,
           )
-        end
-      end
-
-      public
-      def insert(address:, length:, data:, refs: nil) # TODO: refs
-        if @in_transaction
-          return _insert_internal(address: address, length: length, data: data, refs: refs)
-        end
-
-        # TODO: I don't think I'll allow changes outside transactions forever
-        @mutex.synchronize() do
-          @revision += 1
-          return _insert_internal(address: address, length: length, data: data, refs: refs)
         end
       end
 

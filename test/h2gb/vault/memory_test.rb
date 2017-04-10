@@ -11,7 +11,9 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
 
   def test_single_entry()
     memory = H2gb::Vault::Memory.new()
-    memory.insert(address: 0x00, data: "A", length: 0x01)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x01)
+    end
 
     result = memory.get(address: 0x00, length: 0x01)
     expected = [{
@@ -27,7 +29,9 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
 
   def test_get_longer_entry()
     memory = H2gb::Vault::Memory.new()
-    memory.insert(address: 0x00, data: "A", length: 0x40)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x40)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [{
@@ -43,7 +47,9 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
 
   def test_get_entry_in_middle()
     memory = H2gb::Vault::Memory.new()
-    memory.insert(address: 0x80, data: "A", length: 0x01)
+    memory.transaction() do
+      memory.insert(address: 0x80, data: "A", length: 0x01)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [{
@@ -151,8 +157,12 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
   # and doesn't try to allocate memory for everything
   def test_two_very_not_adjacent()
     memory = H2gb::Vault::Memory.new()
-    memory.insert(address: 0x0000000000000000, data: "A", length: 0x02)
-    memory.insert(address: 0x0800000000000000, data: "B", length: 0x02)
+    memory.transaction() do
+      memory.insert(address: 0x0000000000000000, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x0800000000000000, data: "B", length: 0x02)
+    end
 
     # Note: we are NOT going to try to get both, since the get() function has
     # to walk the entire space. We can implement that functionality later
@@ -186,8 +196,12 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
   def test_overwrite()
     memory = H2gb::Vault::Memory.new()
 
-    memory.insert(address: 0x00, data: "A", length: 0x01)
-    memory.insert(address: 0x00, data: "B", length: 0x01)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x01)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "B", length: 0x01)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [{
@@ -204,8 +218,12 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
   def test_overwrite_shorter()
     memory = H2gb::Vault::Memory.new()
 
-    memory.insert(address: 0x00, data: "A", length: 0x41)
-    memory.insert(address: 0x00, data: "B", length: 0x01)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x41)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "B", length: 0x01)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [{
@@ -222,8 +240,12 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
   def test_overwrite_middle()
     memory = H2gb::Vault::Memory.new()
 
-    memory.insert(address: 0x00, data: "A", length: 0x41)
-    memory.insert(address: 0x21, data: "B", length: 0x01)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x41)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x21, data: "B", length: 0x01)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [{
@@ -240,9 +262,15 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
   def test_overwrite_multiple()
     memory = H2gb::Vault::Memory.new()
 
-    memory.insert(address: 0x00, data: "A", length: 0x02)
-    memory.insert(address: 0x02, data: "B", length: 0x04)
-    memory.insert(address: 0x01, data: "C", length: 0x02)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x02, data: "B", length: 0x04)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x01, data: "C", length: 0x02)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [{
@@ -259,9 +287,15 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
   def test_overwrite_multiple_with_gap()
     memory = H2gb::Vault::Memory.new()
 
-    memory.insert(address: 0x00, data: "A", length: 0x02)
-    memory.insert(address: 0x10, data: "B", length: 0x10)
-    memory.insert(address: 0x00, data: "C", length: 0x80)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x10, data: "B", length: 0x10)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "C", length: 0x80)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [{
@@ -277,8 +311,12 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
 
   def test_undo()
     memory = H2gb::Vault::Memory.new()
-    memory.insert(address: 0x00, data: "A", length: 0x02)
-    memory.insert(address: 0x02, data: "B", length: 0x02)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    memory.transaction() do
+      memory.insert(address: 0x02, data: "B", length: 0x02)
+    end
     memory.undo()
 
     result = memory.get(address: 0x00, length: 0xFF)
@@ -298,7 +336,9 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
 
   def test_overwrite_undo()
     memory = H2gb::Vault::Memory.new()
-    memory.insert(address: 0x00, data: "A", length: 0x02)
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [
@@ -312,7 +352,9 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
     ]
     assert_equal(expected, result)
 
-    memory.insert(address: 0x01, data: "B", length: 0x02)
+    memory.transaction() do
+      memory.insert(address: 0x01, data: "B", length: 0x02)
+    end
     result = memory.get(address: 0x00, length: 0xFF)
     expected = [
       {

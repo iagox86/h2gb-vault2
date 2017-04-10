@@ -311,4 +311,10 @@ class H2gb::Vault::MemoryTest < Test::Unit::TestCase
     ]
     assert_equal(expected, result)
   end
+
+  def test_memory_entry_is_private
+    assert_raises(NameError) do
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0)
+    end
+  end
 end

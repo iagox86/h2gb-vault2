@@ -24,7 +24,7 @@ module H2gb
         def initialize(address:)
           @address = address
           @revision = 0
-          @revisions = {}
+          @history = {}
         end
 
         private
@@ -37,13 +37,43 @@ module H2gb
 
         public
         def get(revision: -1)
-          return @revisions[_revision(revision)]
+          revision = _revision(revision)
+          entry = @history[revision]
+          if entry.nil?
+            return {
+              revision: revision,
+              address: address,
+              length: 1,
+              data: nil,
+              refs: [],
+            }
+          end
+
+          return {
+            revision: revision,
+            address: entry[:address],
+            length: entry[:length],
+            data: entry[:data],
+            refs: entry[:refs],
+          }
         end
 
         public
-        def set(revision:, entry:)
+        def set(revision:, address:, length:, data:, refs:)
+          # TODO: Limit the number of revisions that we store
           @revision = revision
-          @revisions[@revision] = entry
+          @history[@revision] = {
+            address: address,
+            length: length,
+            data: data,
+            refs: refs,
+          }
+        end
+
+        public
+        def delete(revision:)
+          @revision = revision
+          @history[@revision] = nil
         end
 
         public
@@ -53,17 +83,12 @@ module H2gb
           end
 
           @revision = 0
-          @revisions.keys.each() do |possible_rev|
+          @history.keys.each() do |possible_rev|
             if possible_rev > revision
               return @revision
             end
             @revision = possible_rev
           end
-        end
-
-        public
-        def history()
-          return @revisions
         end
       end
       # Make the MemoryEntry class private so people can't accidentally use it.
@@ -87,40 +112,47 @@ module H2gb
       end
 
       private
-      def _insert_internal(address:, length:, data:)
+      def _insert_internal(address:, length:, data:, refs:)
         # Remove anything that's already there
         address.upto(address + length - 1) do |i|
-          if @memory[i] && @memory[i].get()
+          # If there's something there, and it isn't nil...
+          if @memory[i]
+            # Remove each address that that memory entry covers
             current_entry = @memory[i].get()
+            # TODO: Maybe add current_entry.each_address()?
             current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
-              @memory[j].set(revision: @revision, entry: nil)
+              @memory[j].delete(revision: @revision)
             end
           end
         end
 
         # Put the new entry into each address
         address.upto(address + length - 1) do |i|
+          # Create the entry on-demand if it doesn't exist
           if @memory[i].nil?
             @memory[i] = MemoryEntry.new(address: i)
           end
 
-          @memory[i].set(revision: @revision, entry: {
-            :address => address,
-            :length => length,
-            :data => data,
-          })
+          @memory[i].set(
+            revision: @revision,
+            address: address,
+            length: length,
+            data: data,
+            refs: refs,
+          )
         end
       end
 
       public
-      def insert(address:, length:, data:)
+      def insert(address:, length:, data:, refs: nil) # TODO: refs
         if @in_transaction
-          return _insert_internal(address: address, length: length, data: data)
+          return _insert_internal(address: address, length: length, data: data, refs: refs)
         end
 
+        # TODO: I don't think I'll allow changes outside transactions forever
         @mutex.synchronize() do
           @revision += 1
-          return _insert_internal(address: address, length: length, data: data)
+          return _insert_internal(address: address, length: length, data: data, refs: refs)
         end
       end
 
@@ -135,7 +167,7 @@ module H2gb
           end
 
           entry = @memory[i].get()
-          if not entry
+          if entry[:data].nil?
             i += 1
             next
           end

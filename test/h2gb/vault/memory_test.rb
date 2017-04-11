@@ -1247,8 +1247,26 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     }
     assert_equal(expected, result)
 
-    result = memory.redo()
-    assert_false(result)
+    memory.redo() # Should do nothing
+    result = memory.get(address: 0x00, length: 0xFF)
+    expected = {
+      revision: 0x08,
+      entries: [
+        {
+          address: 0x00,
+          data: "A",
+          length: 0x02,
+          refs: nil,
+        },
+        {
+          address: 0x04,
+          data: "C",
+          length: 0x02,
+          refs: nil,
+        }
+      ],
+    }
+    assert_equal(expected, result)
   end
 
   def test_redo_goes_away_after_edit()
@@ -1293,7 +1311,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
       memory.insert(address: 0x06, data: "D", length: 0x02)
     end
 
-    assert_false(memory.redo()) # Should do nothing
+    memory.redo() # Should do nothing
 
     result = memory.get(address: 0x00, length: 0xFF)
     expected = {
@@ -1321,12 +1339,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     memory.transaction() do
       memory.insert(address: 0x00, data: "A", length: 0x02)
     end
-    assert_true(memory.undo())
-    assert_false(memory.undo())
-    assert_true(memory.redo())
-    assert_false(memory.redo())
-    assert_false(memory.redo())
-    assert_false(memory.redo())
+    memory.undo()
+    memory.undo()
+    memory.redo()
+    memory.redo()
+    memory.redo()
+    memory.redo()
 
     memory.transaction() do
       memory.insert(address: 0x02, data: "B", length: 0x02)

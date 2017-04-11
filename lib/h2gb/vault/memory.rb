@@ -71,44 +71,121 @@ module H2gb
         end
       end
 
-      ENTRY_INSERT = 0
-      ENTRY_DELETE = 1
+      class MemoryTransaction
+        attr_reader :revision
+
+        ENTRY_INSERT = 0
+        ENTRY_DELETE = 1
+
+        OPPOSITES = {
+          ENTRY_INSERT => ENTRY_DELETE,
+          ENTRY_DELETE => ENTRY_INSERT,
+        }
+
+        def initialize()
+          @revision = 0
+          @undo_revision = 0
+          @redo_buffer = []
+          @revisions = []
+        end
+
+        def increment(undoable:, kill_redo_buffer:)
+          @revision += 1
+          @revisions[@revision] = {
+            undoable: undoable,
+            entries: [],
+          }
+
+          if kill_redo_buffer
+            @undo_revision = @revision
+            @redo_buffer = []
+          end
+        end
+
+        def add_to_current_transaction(type:, entry:)
+          @revisions[@revision][:entries] << {
+            action: type,
+            entry:  entry,
+          }
+        end
+
+        def undo_transaction()
+          # Go back until we find the first undoable revision
+          @undo_revision.step(0, -1) do |revision|
+            if revision == 0
+              @undo_revision = 0
+              return
+            end
+
+            if @revisions[revision][:undoable]
+              @undo_revision = revision
+              break
+            end
+          end
+
+          # Create a new entry in the revisions list
+          increment(undoable: false, kill_redo_buffer: false)
+
+          # Mark the revision as no longer undoable (since we can't undo an undo)
+          @revisions[@undo_revision][:undoable] = false
+
+          # Go through the current @undo_revision backwards, and unapply each one
+          @revisions[@undo_revision][:entries].reverse().each do |forward_entry|
+            action = OPPOSITES[forward_entry[:action]]
+            if action.nil?
+              raise(MemoryError, "Unknown revision action: %d" % forward_entry[:action])
+            end
+
+            yield(action, forward_entry[:entry])
+          end
+
+          # Add the entry to the redo buffer
+          @redo_buffer << @revisions[@undo_revision]
+        end
+
+        def redo_transaction()
+          # If there's nothing in our redo buffer, just return
+          if @redo_buffer.length == 0
+            return
+          end
+
+          # Create a new undoable entry in the revisions list
+          increment(undoable: true, kill_redo_buffer: false)
+
+          # Go through the current @undo_revision backwards, and unapply each one
+          redo_revision = @redo_buffer.pop()
+          redo_revision[:entries].each do |redo_entry|
+            yield(redo_entry[:action], redo_entry[:entry])
+          end
+
+          return true
+        end
+      end
 
       public
       def initialize()
         @memory_block = MemoryBlock.new()
-        @revision = 0
-        @undo_revision = 0
-        @redo_buffer = []
-        @revisions = []
+        @transactions = MemoryTransaction.new()
         @in_transaction = false
         @mutex = Mutex.new()
-        @redoable_steps = 0
       end
 
       public
       def transaction()
         @mutex.synchronize() do
           @in_transaction = true
-          @revision += 1
-          @undo_revision = @revision
-          @redo_buffer = []
-          @revisions[@revision] = {
+
+          @transactions.increment(
             undoable: true,
-            entries:  [],
-          }
+            kill_redo_buffer: true,
+          )
           yield
         end
       end
 
-
       private
       def _delete_internal(entry:)
-        @revisions[@revision][:entries] << {
-          action: ENTRY_DELETE,
-          entry:  entry,
-        }
-
+        @transactions.add_to_current_transaction(type: MemoryTransaction::ENTRY_DELETE, entry: entry)
         @memory_block.delete(entry: entry)
       end
 
@@ -119,10 +196,7 @@ module H2gb
         end
         @memory_block.insert(entry: entry)
 
-        @revisions[@revision][:entries] << {
-          action: ENTRY_INSERT,
-          entry:  entry,
-        }
+        @transactions.add_to_current_transaction(type: MemoryTransaction::ENTRY_INSERT, entry: entry)
       end
 
       public
@@ -149,7 +223,7 @@ module H2gb
       public
       def get(address:, length:)
         result = {
-          revision: @revision,
+          revision: @transactions.revision,
           entries: [],
         }
 
@@ -165,70 +239,26 @@ module H2gb
         return result
       end
 
-      # TODO: I can probably extract all the revision stuff into its own class
       public
       def undo()
-        # Go back until we find the first undoable revision
-        @undo_revision.step(0, -1) do |revision|
-          if revision == 0
-            @undo_revision = 0
-            return false
-          end
-
-          if @revisions[revision][:undoable]
-            @undo_revision = revision
-            break
-          end
-        end
-
-        # Create a new entry in the revisions list
-        @revision += 1
-        @revisions[@revision] = {
-          undoable: false,
-          entries: [],
-        }
-
-        # Mark the revision as no longer undoable (since we can't undo an undo)
-        @revisions[@undo_revision][:undoable] = false
-
-        # Go through the current @undo_revision backwards, and unapply each one
-        @revisions[@undo_revision][:entries].reverse().each do |forward_entry|
-          if forward_entry[:action] == ENTRY_INSERT
-            _delete_internal(entry: forward_entry[:entry])
-          elsif forward_entry[:action] == ENTRY_DELETE
-            _insert_internal(entry: forward_entry[:entry])
+        @transactions.undo_transaction() do |action, entry|
+          if action == MemoryTransaction::ENTRY_INSERT
+            _insert_internal(entry: entry)
+          elsif action == MemoryTransaction::ENTRY_DELETE
+            _delete_internal(entry: entry)
           else
-            raise(MemoryError, "Unknown revision action: %d" % forward_entry[:action])
+            raise(MemoryError, "Unknown revision action: %d" % action)
           end
         end
-
-        # Add the entry to the redo buffer
-        @redo_buffer << @revisions[@undo_revision]
-
-        return true
       end
 
       public
       def redo()
-        # If there's nothing in our redo buffer, just return
-        if @redo_buffer.length == 0
-          return false
-        end
-
-        # Create a new undoable entry in the revisions list
-        @revision += 1
-        @revisions[@revision] = {
-          undoable: true,
-          entries: [],
-        }
-
-        # Go through the current @undo_revision backwards, and unapply each one
-        redo_revision = @redo_buffer.pop()
-        redo_revision[:entries].each do |redo_entry|
-          if redo_entry[:action] == ENTRY_INSERT
-            _insert_internal(entry: redo_entry[:entry])
-          elsif redo_entry[:action] == ENTRY_DELETE
-            _delete_internal(entry: redo_entry[:entry])
+        @transactions.redo_transaction() do |action, entry|
+          if action == MemoryTransaction::ENTRY_INSERT
+            _insert_internal(entry: entry)
+          elsif action == MemoryTransaction::ENTRY_DELETE
+            _delete_internal(entry: entry)
           else
             raise(MemoryError, "Unknown revision action: %d" % redo_entry[:action])
           end
@@ -239,7 +269,7 @@ module H2gb
 
       public
       def to_s()
-        return "Revision: %d => %s" % [@revision, @memory_block]
+        return "Revision: %d => %s" % [@transactions.revision, @memory_block]
       end
     end
   end

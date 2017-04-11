@@ -1490,7 +1490,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
   end
 end
 
-class H2gb::Vault::GetChangesTest < Test::Unit::TestCase
+class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
   def test_get_changes_since()
   end
+end
+
+class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
 end

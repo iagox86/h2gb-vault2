@@ -31,16 +31,52 @@ module H2gb
           return "%p :: 0x%x bytes => %s" % [@address, @length, @data]
         end
       end
-
       # Make the MemoryEntry class private so people can't accidentally use it.
       private_constant :MemoryEntry
+
+      class MemoryBlock
+        def initialize()
+          @memory = {}
+        end
+
+        def insert(entry:)
+          entry.each_address() do |i|
+            @memory[i] = entry
+          end
+        end
+
+        def delete(entry:)
+          entry.each_address() do |i|
+            @memory[i] = nil
+          end
+        end
+
+        def each_entry_in_range(address:, length:)
+          i = address
+
+          while i < address + length
+            if @memory[i]
+              # Pre-compute the next value of i, in case we're deleting the memory
+              next_i = @memory[i].address + @memory[i].length
+              yield(@memory[i])
+              i = next_i
+            else
+              i += 1
+            end
+          end
+        end
+
+        def to_s()
+          return (@memory.map() { |m, e| e.to_s() }).join("\n")
+        end
+      end
 
       ENTRY_INSERT = 0
       ENTRY_DELETE = 1
 
       public
       def initialize()
-        @memory = {}
+        @memory_block = MemoryBlock.new()
         @revision = 0
         @undo_revision = 0
         @redo_buffer = []
@@ -65,21 +101,6 @@ module H2gb
         end
       end
 
-      private
-      def _each_entry_in_range(address:, length:)
-        i = address
-
-        while i < address + length
-          if @memory[i]
-            # Pre-compute the next value of i, in case we're deleting the memory
-            next_i = @memory[i].address + @memory[i].length
-            yield(@memory[i])
-            i = next_i
-          else
-            i += 1
-          end
-        end
-      end
 
       private
       def _delete_internal(entry:)
@@ -88,19 +109,15 @@ module H2gb
           entry:  entry,
         }
 
-        entry.each_address() do |i|
-          @memory[i] = nil
-        end
+        @memory_block.delete(entry: entry)
       end
 
       private
       def _insert_internal(entry:)
-        _each_entry_in_range(address: entry.address, length: entry.length) do |e|
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |e|
           _delete_internal(entry: e)
         end
-        entry.each_address() do |i|
-          @memory[i] = entry
-        end
+        @memory_block.insert(entry: entry)
 
         @revisions[@revision][:entries] << {
           action: ENTRY_INSERT,
@@ -124,7 +141,7 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        _each_entry_in_range(address: address, length: length) do |entry|
+        @memory_block.each_entry_in_range(address: address, length: length) do |entry|
           _delete_internal(entry: entry)
         end
       end
@@ -136,7 +153,7 @@ module H2gb
           entries: [],
         }
 
-        _each_entry_in_range(address: address, length: length) do |entry|
+        @memory_block.each_entry_in_range(address: address, length: length) do |entry|
           result[:entries] << {
             address: entry.address,
             data:    entry.data,
@@ -222,7 +239,7 @@ module H2gb
 
       public
       def to_s()
-        return "Revision: %d => %s" % [@revision, (@memory.map() { |m, e| e.to_s() }).join("\n")]
+        return "Revision: %d => %s" % [@revision, @memory_block]
       end
     end
   end

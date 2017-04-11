@@ -18,12 +18,18 @@ module H2gb
 
         def insert(entry:)
           entry.each_address() do |i|
+            if @memory[i]
+              raise(H2gb::Vault::Memory::MemoryError, "Tried to write to memory that's already in use")
+            end
             @memory[i] = entry
           end
         end
 
         def delete(entry:)
           entry.each_address() do |i|
+            if @memory[i].nil?
+              raise(H2gb::Vault::Memory::MemoryError, "Tried to clear memory that's not in use")
+            end
             @memory[i] = nil
           end
         end

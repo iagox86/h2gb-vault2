@@ -239,32 +239,29 @@ module H2gb
         return result
       end
 
+      private
+      def _apply(action:, entry:)
+        if action == MemoryTransaction::ENTRY_INSERT
+          _insert_internal(entry: entry)
+        elsif action == MemoryTransaction::ENTRY_DELETE
+          _delete_internal(entry: entry)
+        else
+          raise(MemoryError, "Unknown revision action: %d" % action)
+        end
+      end
+
       public
       def undo()
         @transactions.undo_transaction() do |action, entry|
-          if action == MemoryTransaction::ENTRY_INSERT
-            _insert_internal(entry: entry)
-          elsif action == MemoryTransaction::ENTRY_DELETE
-            _delete_internal(entry: entry)
-          else
-            raise(MemoryError, "Unknown revision action: %d" % action)
-          end
+          _apply(action: action, entry: entry)
         end
       end
 
       public
       def redo()
         @transactions.redo_transaction() do |action, entry|
-          if action == MemoryTransaction::ENTRY_INSERT
-            _insert_internal(entry: entry)
-          elsif action == MemoryTransaction::ENTRY_DELETE
-            _delete_internal(entry: entry)
-          else
-            raise(MemoryError, "Unknown revision action: %d" % redo_entry[:action])
-          end
+          _apply(action: action, entry: entry)
         end
-
-        return true
       end
 
       public

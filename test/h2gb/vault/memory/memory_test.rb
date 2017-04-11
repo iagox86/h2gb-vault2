@@ -1,6 +1,6 @@
 require 'test_helper'
 
-require 'h2gb/vault/memory'
+require 'h2gb/vault/memory/memory'
 
 class H2gb::Vault::InsertTest < Test::Unit::TestCase
   def test_empty()

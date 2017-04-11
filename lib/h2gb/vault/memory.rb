@@ -12,131 +12,39 @@ module H2gb
       class MemoryError < RuntimeError
       end
 
-      ##
-      # Store an entry for a single memory address. That includes arbitrary data
-      # as well as revision history.
-      #
-      # The purpose for this class is that each byte of memory needs to remember
-      # its own revision. Rather than trying to maintain that information in a
-      # series of hashes, it made sense to create an object that could track it
-      # itself.
-      ##
       class MemoryEntry
-        attr_reader :address, :entry
-
-        STATE_DELETED = 0
-        STATE_VALID = 1
-
-        def initialize(address:)
+        attr_reader :address, :length, :data, :refs
+        def initialize(address:, length:, data:, refs:)
           @address = address
-          @revision = 0
-          @max_revision = 0
-          @history = {}
+          @length = length
+          @data = data
+          @refs = refs
         end
 
-        private
-        def _revision(revision)
-          if revision == -1
-            return @revision
+        def each_address()
+          @address.upto(@address + @length - 1) do |i|
+            yield(i)
           end
-          return revision
         end
 
-        public
-        def get(revision: -1)
-          revision = _revision(revision)
-          entry = @history[revision]
-          if entry.nil? or entry[:state] == STATE_DELETED
-            return {
-              revision: revision,
-              address: address,
-              length: 1,
-              data: nil,
-              refs: [],
-            }
-          end
-
-          return {
-            revision: revision,
-            address: entry[:address],
-            length: entry[:length],
-            data: entry[:data],
-            refs: entry[:refs],
-          }
-        end
-
-        public
-        def set(revision:, address:, length:, data:, refs:)
-          # TODO: Limit the number of revisions that we store
-          @revision = revision
-          @max_revision = revision
-          @history[@revision] = {
-            state: STATE_VALID,
-            address: address,
-            length: length,
-            data: data,
-            refs: refs,
-          }
-        end
-
-        public
-        def delete(revision:)
-          @revision = revision
-          @max_revision = revision
-          @history[@revision] = {
-            state: STATE_DELETED,
-          }
-        end
-
-        public
-        def rollback(revision:)
-          if revision > @max_revision
-            revision = @max_revision
-          end
-
-          if revision < 0
-            revision = 0
-          end
-
-          # If we're already there, nothing to do (happens if they undo or redo
-          # too far)
-          if revision == @revision
-            return @revision
-          end
-
-          # Always find the closest-revision-without-going-over, whether it's
-          # for undo or redo
-          @revision = 0
-          revision.step(0, -1) do |i|
-            if @history[i]
-              @revision = i
-              break
-            end
-          end
-
-          return @revision
-        end
-
-        public
-        def to_s(revision: -1)
-          revision = _revision(revision)
-          entry = @history[revision]
-
-          if entry.nil? or entry[:state] == STATE_DELETED
-            return "%p [%d] :: deleted" % [@address, @revision]
-          end
-
-          return "%p [%d] :: address = %p, length = 0x%x" % [@address, @revision, entry[:address], entry[:length]]
+        def to_s()
+          return "%p :: 0x%x bytes => %s" % [@address, @length, @data]
         end
       end
 
       # Make the MemoryEntry class private so people can't accidentally use it.
       private_constant :MemoryEntry
 
+      ENTRY_INSERT = 0
+      ENTRY_DELETE = 1
+
       public
       def initialize()
         @memory = {}
         @revision = 0
+        @undo_revision = 0
+        @redo_buffer = []
+        @revisions = []
         @in_transaction = false
         @mutex = Mutex.new()
         @redoable_steps = 0
@@ -147,12 +55,57 @@ module H2gb
         @mutex.synchronize() do
           @in_transaction = true
           @revision += 1
+          @undo_revision = @revision
+          @redo_buffer = []
+          @revisions[@revision] = {
+            undoable: true,
+            entries:  [],
+          }
           yield
         end
       end
 
       private
-      def _insert_internal(address:, length:, data:, refs:)
+      def _each_entry_in_range(address:, length:)
+        i = address
+
+        while i < address + length
+          if @memory[i]
+            # Pre-compute the next value of i, in case we're deleting the memory
+            next_i = @memory[i].address + @memory[i].length
+            yield(@memory[i])
+            i = next_i
+          else
+            i += 1
+          end
+        end
+      end
+
+      private
+      def _delete_internal(entry:)
+        @revisions[@revision][:entries] << {
+          action: ENTRY_DELETE,
+          entry:  entry,
+        }
+
+        entry.each_address() do |i|
+          @memory[i] = nil
+        end
+      end
+
+      private
+      def _insert_internal(entry:)
+        _each_entry_in_range(address: entry.address, length: entry.length) do |e|
+          _delete_internal(entry: e)
+        end
+        entry.each_address() do |i|
+          @memory[i] = entry
+        end
+
+        @revisions[@revision][:entries] << {
+          action: ENTRY_INSERT,
+          entry:  entry,
+        }
       end
 
       public
@@ -161,98 +114,115 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        # Once we insert, we want to turn off any 'redo' steps
-        @redoable_steps = 0
+        entry = MemoryEntry.new(address: address, length: length, data: data, refs: refs)
+        _insert_internal(entry: entry)
+      end
 
-        # Remove anything that's already there
-        address.upto(address + length - 1) do |i|
-          # If there's something there, and it isn't nil...
-          if @memory[i]
-            # Remove each address that that memory entry covers
-            current_entry = @memory[i].get()
-            current_entry[:address].upto(current_entry[:address] + current_entry[:length] - 1) do |j|
-              @memory[j].delete(revision: @revision)
-            end
-          end
+      public
+      def delete(address:, length:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        # Put the new entry into each address
-        address.upto(address + length - 1) do |i|
-          # Create the entry on-demand if it doesn't exist
-          if @memory[i].nil?
-            @memory[i] = MemoryEntry.new(address: i)
-          end
-
-          @memory[i].set(
-            revision: @revision,
-            address: address,
-            length: length,
-            data: data,
-            refs: refs,
-          )
+        _each_entry_in_range(address: address, length: length) do |entry|
+          _delete_internal(entry: entry)
         end
       end
 
       public
       def get(address:, length:)
-        result = []
-        i = address
-        while(i < address + length)
-          if(@memory[i].nil?)
-            i += 1
-            next
-          end
+        result = {
+          revision: @revision,
+          entries: [],
+        }
 
-          entry = @memory[i].get()
-          if entry[:data].nil?
-            i += 1
-            next
-          end
-
-          result << entry
-
-          # Go to the address immediately following
-          i = entry[:address] + entry[:length]
+        _each_entry_in_range(address: address, length: length) do |entry|
+          result[:entries] << {
+            address: entry.address,
+            data:    entry.data,
+            length:  entry.length,
+            refs:    entry.refs,
+          }
         end
 
         return result
       end
 
-      public
-      def rollback(revision:)
-        # TODO: This is not going to scale well
-        max_revision = 0
-        @memory.each_value() do |memory_entry|
-          new_revision = memory_entry.rollback(revision: revision)
-          max_revision = [new_revision, max_revision].max()
-        end
-
-        return max_revision
-      end
-
+      # TODO: I can probably extract all the revision stuff into its own class
       public
       def undo()
-        @mutex.synchronize() do
-          @revision = rollback(revision: @revision - 1)
+        # Go back until we find the first undoable revision
+        @undo_revision.step(0, -1) do |revision|
+          if revision == 0
+            @undo_revision = 0
+            return false
+          end
+
+          if @revisions[revision][:undoable]
+            @undo_revision = revision
+            break
+          end
         end
-        @redoable_steps += 1
+
+        # Create a new entry in the revisions list
+        @revision += 1
+        @revisions[@revision] = {
+          undoable: false,
+          entries: [],
+        }
+
+        # Mark the revision as no longer undoable (since we can't undo an undo)
+        @revisions[@undo_revision][:undoable] = false
+
+        # Go through the current @undo_revision backwards, and unapply each one
+        @revisions[@undo_revision][:entries].reverse().each do |forward_entry|
+          if forward_entry[:action] == ENTRY_INSERT
+            _delete_internal(entry: forward_entry[:entry])
+          elsif forward_entry[:action] == ENTRY_DELETE
+            _insert_internal(entry: forward_entry[:entry])
+          else
+            raise(MemoryError, "Unknown revision action: %d" % forward_entry[:action])
+          end
+        end
+
+        # Add the entry to the redo buffer
+        @redo_buffer << @revisions[@undo_revision]
+
+        return true
       end
 
       public
       def redo()
-        if @redoable_steps == 0
-          return
+        # If there's nothing in our redo buffer, just return
+        if @redo_buffer.length == 0
+          return false
         end
 
-        @mutex.synchronize() do
-          @revision = rollback(revision: @revision + 1)
+        # Create a new undoable entry in the revisions list
+        @revision += 1
+        @revisions[@revision] = {
+          undoable: true,
+          entries: [],
+        }
+
+        # Go through the current @undo_revision backwards, and unapply each one
+        redo_revision = @redo_buffer.pop()
+        redo_revision[:entries].each do |redo_entry|
+          if redo_entry[:action] == ENTRY_INSERT
+            _insert_internal(entry: redo_entry[:entry])
+          elsif redo_entry[:action] == ENTRY_DELETE
+            _delete_internal(entry: redo_entry[:entry])
+          else
+            raise(MemoryError, "Unknown revision action: %d" % redo_entry[:action])
+          end
         end
-        @redoable_steps -= 1
+
+        return true
       end
 
       public
       def to_s()
-        return (@memory.map() { |m, e| e.to_s() }).join("\n")
+        return "Revision: %d => %s" % [@revision, (@memory.map() { |m, e| e.to_s() }).join("\n")]
       end
     end
   end

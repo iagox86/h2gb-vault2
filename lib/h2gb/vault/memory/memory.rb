@@ -36,10 +36,7 @@ module H2gb
         @mutex.synchronize() do
           @in_transaction = true
 
-          @transactions.increment(
-            undoable: true,
-            kill_redo_buffer: true,
-          )
+          @transactions.increment()
           yield
         end
       end

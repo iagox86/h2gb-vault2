@@ -351,6 +351,20 @@ class H2gb::Vault::MemoryTransactionUndoTest < Test::Unit::TestCase
     end
     assert_equal(2, memory_transaction.revision)
   end
+
+  def test_undo_unknown_type()
+    memory_transaction = H2gb::Vault::Memory::MemoryTransaction.new(
+      opposites: {:a => :A, :A => :a},
+    )
+
+    memory_transaction.increment()
+    memory_transaction.add_to_current_transaction(type: :b, entry: "1")
+
+    assert_raises(H2gb::Vault::Memory::MemoryError) do
+      memory_transaction.undo_transaction() do |type, entry|
+      end
+    end
+  end
 end
 
 class H2gb::Vault::MemoryTransactionRedoTest < Test::Unit::TestCase

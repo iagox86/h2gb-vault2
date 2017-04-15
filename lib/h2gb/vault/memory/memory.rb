@@ -96,6 +96,7 @@ module H2gb
               data:    entry.data,
               length:  entry.length,
               refs:    entry.refs,
+              raw:     raw,
             }
           end
         end

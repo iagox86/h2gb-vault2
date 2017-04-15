@@ -29,9 +29,10 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
       revision: 0x1,
       entries: [{
         address: 0x00,
-        data:    "A",
-        length:  0x01,
-        refs:    nil,
+        data: "A",
+        length: 0x01,
+        refs: nil,
+        raw: [0x00],
       }]
     }
 
@@ -40,7 +41,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
 
   def test_get_longer_entry()
     @memory.transaction() do
-      @memory.insert(address: 0x00, data: "A", length: 0x40)
+      @memory.insert(address: 0x00, data: "A", length: 0x08)
     end
 
     result = @memory.get(address: 0x00, length: 0xFF)
@@ -48,9 +49,10 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
       revision: 1,
       entries: [{
         address: 0x00,
-        data:    "A",
-        length:  0x40,
-        refs:    nil,
+        data: "A",
+        length: 0x08,
+        refs: nil,
+        raw: [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07],
       }]
     }
 
@@ -67,9 +69,10 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
       revision: 0x01,
       entries: [{
         address: 0x80,
-        data:    "A",
-        length:  0x01,
-        refs:    nil,
+        data: "A",
+        length: 0x01,
+        refs: nil,
+        raw: [0x80],
       }]
     }
 
@@ -95,12 +98,14 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         }
       ]
     }
@@ -124,12 +129,14 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         }
       ]
     }
@@ -153,12 +160,14 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x80,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x80, 0x81],
         }
       ]
     }
@@ -182,6 +191,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
         data: "B",
         length: 0x01,
         refs: nil,
+        raw: [0x00],
       }]
     }
 
@@ -204,6 +214,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
         data: "B",
         length: 0x01,
         refs: nil,
+        raw: [0x00],
       }]
     }
 
@@ -226,6 +237,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
         data: "B",
         length: 0x01,
         refs: nil,
+        raw: [0x21],
       }]
     }
 
@@ -251,6 +263,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
         data: "C",
         length: 0x02,
         refs: nil,
+        raw: [0x01, 0x02],
       }]
     }
 
@@ -276,6 +289,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
         data: "C",
         length: 0x80,
         refs: nil,
+        raw: (0x00..0x7F).to_a(),
       }]
     }
 
@@ -377,7 +391,7 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     end
 
     @memory.transaction() do
-      @memory.delete(address: 0x00, length: 0x0)
+      @memory.delete(address: 0x08, length: 0x0)
     end
 
     result = @memory.get(address: 0x00, length: 0xFF)
@@ -385,9 +399,10 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
       revision: 0x02,
       entries: [{
         address: 0x00,
-        data:    "A",
-        length:  0x10,
-        refs:    nil,
+        data: "A",
+        length: 0x10,
+        refs: nil,
+        raw: (0x00..0x0F).to_a(),
       }],
     }
 
@@ -466,15 +481,17 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
       entries: [
         {
           address: 0x00,
-          data:    "A",
-          length:  0x10,
-          refs:    nil,
+          data: "A",
+          length: 0x10,
+          refs: nil,
+          raw: (0x00..0x0F).to_a(),
         },
         {
           address: 0x20,
           data:    "C",
           length:  0x10,
           refs:    nil,
+          raw: (0x20..0x2F).to_a(),
         }
       ],
     }
@@ -501,12 +518,14 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
           data:    "A",
           length:  0x10,
           refs:    nil,
+          raw: (0x00..0x0F).to_a(),
         },
         {
           address: 0x30,
           data:    "D",
           length:  0x10,
           refs:    nil,
+          raw: (0x30..0x3F).to_a(),
         }
       ],
     }
@@ -537,6 +556,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
         data: "A",
         length: 0x02,
         refs: nil,
+        raw: [0x00, 0x01],
       }],
     }
 
@@ -563,18 +583,21 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         },
       ]
     }
@@ -590,12 +613,14 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
       ]
     }
@@ -611,6 +636,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
       ]
     }
@@ -647,12 +673,14 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         },
       ]
     }
@@ -682,6 +710,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
       }],
     }
     assert_equal(expected, result)
@@ -699,12 +728,14 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         }
       ],
     }
@@ -720,6 +751,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
       }],
     }
     assert_equal(expected, result)
@@ -758,12 +790,14 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         },
       ]
     }
@@ -778,6 +812,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
         data: "A",
         length: 0x02,
         refs: nil,
+        raw: [0x00, 0x01],
       }]
     }
     assert_equal(expected, result)
@@ -806,6 +841,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
         data: "A",
         length: 0x02,
         refs: nil,
+        raw: [0x00, 0x01],
       }]
     }
 
@@ -825,6 +861,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
         data: "A",
         length: 0x02,
         refs: nil,
+        raw: [0x00, 0x01],
       }]
     }
     assert_equal(expected, result)
@@ -840,6 +877,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
         data: "B",
         length: 0x02,
         refs: nil,
+        raw: [0x01, 0x02],
       }]
     }
     assert_equal(expected, result)
@@ -853,6 +891,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
         data: "A",
         length: 0x02,
         refs: nil,
+        raw: [0x00, 0x01],
       }]
     }
     assert_equal(expected, result)
@@ -878,12 +917,14 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x01, 0x02],
         },
         {
           address: 0x03,
           data: "D",
           length: 0x02,
           refs: nil,
+          raw: [0x03, 0x04],
         },
       ]
     }
@@ -900,12 +941,14 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
       ]
     }
@@ -938,12 +981,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
       ]
     }
@@ -983,6 +1028,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
       ]
     }
@@ -998,12 +1044,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
       ]
     }
@@ -1019,18 +1067,21 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         },
       ]
     }
@@ -1060,12 +1111,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
       ]
     }
@@ -1095,6 +1148,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
       }],
     }
     assert_equal(expected, result)
@@ -1112,12 +1166,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         }
       ],
     }
@@ -1133,6 +1189,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
       }],
     }
     assert_equal(expected, result)
@@ -1157,6 +1214,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
       ],
     }
@@ -1173,12 +1231,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         }
       ],
     }
@@ -1194,12 +1254,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x04,
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         }
       ],
     }
@@ -1238,6 +1300,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
       ]
     }
@@ -1258,12 +1321,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x06,
           data: "D",
           length: 0x02,
           refs: nil,
+          raw: [0x06, 0x07],
         },
       ]
     }
@@ -1294,12 +1359,14 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "A",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
       ]
     }
@@ -1334,6 +1401,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "C",
           length: 0x03,
           refs: nil,
+          raw: [0x00, 0x01, 0x02],
         },
       ]
     }
@@ -1362,18 +1430,21 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "E",
           length: 0x02,
           refs: nil,
+          raw: [0x01, 0x02],
         },
         {
           address: 0x04,
           data: "D",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         },
         {
           address: 0x06,
           data: "F",
           length: 0x02,
           refs: nil,
+          raw: [0x06, 0x07],
         },
       ]
     }
@@ -1394,18 +1465,21 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "C",
           length: 0x02,
           refs: nil,
+          raw: [0x00, 0x01],
         },
         {
           address: 0x02,
           data: "B",
           length: 0x02,
           refs: nil,
+          raw: [0x02, 0x03],
         },
         {
           address: 0x04,
           data: "D",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         },
       ]
     }
@@ -1422,18 +1496,21 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
           data: "E",
           length: 0x02,
           refs: nil,
+          raw: [0x01, 0x02],
         },
         {
           address: 0x04,
           data: "D",
           length: 0x02,
           refs: nil,
+          raw: [0x04, 0x05],
         },
         {
           address: 0x06,
           data: "F",
           length: 0x02,
           refs: nil,
+          raw: [0x06, 0x07],
         },
       ]
     }

@@ -295,6 +295,42 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
 
     assert_equal(expected, result)
   end
+
+  def test_include_empty_get()
+    @memory.transaction() do
+      @memory.insert(address: 0x01, data: "A", length: 0x02)
+    end
+
+    result = @memory.get(address: 0x00, length: 0x04, include_empty: true)
+    expected = {
+      revision: 0x1,
+      entries: [
+        {
+          address: 0x00,
+          data: nil,
+          length: 0x01,
+          refs: nil,
+          raw: [0x00],
+        },
+        {
+          address: 0x01,
+          data: "A",
+          length: 0x02,
+          refs: nil,
+          raw: [0x01, 0x02],
+        },
+        {
+          address: 0x03,
+          data: nil,
+          length: 0x01,
+          refs: nil,
+          raw: [0x03],
+        },
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
 end
 
 ##

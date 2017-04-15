@@ -21,8 +21,8 @@ module H2gb
       ENTRY_DELETE = :delete
 
       public
-      def initialize()
-        @memory_block = MemoryBlock.new()
+      def initialize(raw:)
+        @memory_block = MemoryBlock.new(raw: raw)
         @transactions = MemoryTransaction.new(opposites: {
           ENTRY_INSERT => ENTRY_DELETE,
           ENTRY_DELETE => ENTRY_INSERT,
@@ -49,8 +49,10 @@ module H2gb
 
       private
       def _insert_internal(entry:)
-        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |e|
-          _delete_internal(entry: e)
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |address, type, this_entry, raw|
+          if type == :entry
+            _delete_internal(entry: this_entry)
+          end
         end
         @memory_block.insert(entry: entry)
 
@@ -73,8 +75,10 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |entry|
-          _delete_internal(entry: entry)
+        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, type, entry, raw|
+          if type == :entry
+            _delete_internal(entry: entry)
+          end
         end
       end
 
@@ -85,13 +89,15 @@ module H2gb
           entries: [],
         }
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |entry|
-          result[:entries] << {
-            address: entry.address,
-            data:    entry.data,
-            length:  entry.length,
-            refs:    entry.refs,
-          }
+        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, type, entry, raw|
+          if type == :entry
+            result[:entries] << {
+              address: entry.address,
+              data:    entry.data,
+              length:  entry.length,
+              refs:    entry.refs,
+            }
+          end
         end
 
         return result

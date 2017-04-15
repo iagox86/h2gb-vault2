@@ -12,7 +12,8 @@ module H2gb
   module Vault
     class Memory
       class MemoryBlock
-        def initialize()
+        def initialize(raw:)
+          @raw = raw
           @memory = {}
         end
 
@@ -21,6 +22,10 @@ module H2gb
             if @memory[i]
               raise(H2gb::Vault::Memory::MemoryError, "Tried to write to memory that's already in use")
             end
+            if @raw[i].nil?
+              raise(H2gb::Vault::Memory::MemoryError, "Tried to create an entry outside of the memory range")
+            end
+
             @memory[i] = entry
           end
         end
@@ -34,6 +39,10 @@ module H2gb
           end
         end
 
+        def get_raw(entry:)
+          return @raw[entry.address, entry.length].bytes()
+        end
+
         def each_entry_in_range(address:, length:)
           i = address
 
@@ -41,10 +50,13 @@ module H2gb
             if @memory[i]
               # Pre-compute the next value of i, in case we're deleting the memory
               next_i = @memory[i].address + @memory[i].length
-              yield(@memory[i])
+              yield(@memory[i].address, :entry, @memory[i], get_raw(entry: @memory[i]))
               i = next_i
-            else
+            elsif @raw[i]
+              yield(i, :no_entry, nil, [@raw[i].ord])
               i += 1
+            else
+              raise(H2gb::Vault::Memory::MemoryError, "Tried to retrieve an entry outside of the range")
             end
           end
         end

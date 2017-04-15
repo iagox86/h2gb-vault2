@@ -1,5 +1,6 @@
 require 'test_helper'
 
+require 'h2gb/vault/memory/memory_error'
 require 'h2gb/vault/memory/memory_transaction'
 
 class H2gb::Vault::MemoryTransactionTest < Test::Unit::TestCase

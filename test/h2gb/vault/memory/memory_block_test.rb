@@ -10,8 +10,8 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
   end
 
   def test_empty()
-    @memory_block.each_entry_in_range(address: 0x00, length: 0xFF) do |address, type, entry, raw|
-      assert_equal(type, :no_entry)
+    @memory_block.each_entry_in_range(address: 0x00, length: 0xFF) do |address, entry, raw|
+      assert_nil(entry)
     end
   end
 
@@ -21,13 +21,12 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
-    @memory_block.insert(entry: memory_entry)
+    @memory_block.insert(entry: memory_entry, revision: 1)
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0001) do |address, type, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0001) do |address, entry, raw|
       entries << entry
     end
     assert_equal([memory_entry], entries)
@@ -39,13 +38,11 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
-    @memory_block.insert(entry: memory_entry)
+    @memory_block.insert(entry: memory_entry, revision: 1)
 
-    @memory_block.each_entry_in_range(address: 0x0010, length: 0x0004) do |address, type, entry, raw|
-      assert_equal(:no_entry, type)
+    @memory_block.each_entry_in_range(address: 0x0010, length: 0x0004) do |address, entry, raw|
       assert_nil(entry)
       assert_equal(1, raw.length())
       # Check against the address, because that's how I set up the memory in setup()
@@ -59,14 +56,12 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
-    @memory_block.insert(entry: memory_entry)
+    @memory_block.insert(entry: memory_entry, revision: 1)
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
-      @memory_block.each_entry_in_range(address: 0x00F8, length: 0x0010) do |address, type, entry, raw|
-        assert_equal(:no_entry, type)
+      @memory_block.each_entry_in_range(address: 0x00F8, length: 0x0010) do |address, entry, raw|
         assert_nil(entry)
         assert_equal(1, raw.length())
         # Check against the address, because that's how I set up the memory in setup()
@@ -81,17 +76,16 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
-    @memory_block.insert(entry: memory_entry)
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, type, entry, raw|
-      if type == :entry
+    @memory_block.insert(entry: memory_entry, revision: 1)
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+      if entry
         assert_equal(0x80, address)
         assert_equal([0x80], raw)
         assert_equal(memory_entry, entry)
       else
-        assert_equal(:no_entry, type)
+        assert_nil(entry)
       end
     end
   end
@@ -103,34 +97,31 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0020,
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0030,
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
     ]
 
     memory_entries.each do |memory_entry|
-      @memory_block.insert(entry: memory_entry)
+      @memory_block.insert(entry: memory_entry, revision: 1)
     end
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, type, entry, raw|
-      if type == :entry
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+      if entry
         entries << entry
       else
-        assert_equal(type, :no_entry)
+        assert_nil(entry)
       end
     end
     assert_equal(memory_entries, entries)
@@ -143,20 +134,18 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0008,
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
     ]
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       memory_entries.each do |memory_entry|
-        @memory_block.insert(entry: memory_entry)
+        @memory_block.insert(entry: memory_entry, revision: 1)
       end
     end
   end
@@ -167,14 +156,13 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0010,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
-    @memory_block.insert(entry: memory_entry)
-    @memory_block.delete(entry: memory_entry)
+    @memory_block.insert(entry: memory_entry, revision: 1)
+    @memory_block.delete(entry: memory_entry, revision: 1)
 
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF) do |address, type, entry, raw|
-      assert_equal(type, :no_entry)
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF) do |address, entry, raw|
+      assert_nil(entry)
     end
   end
 
@@ -185,44 +173,41 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0020,
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0030,
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       ),
     ]
 
     memory_entries.each do |memory_entry|
-      @memory_block.insert(entry: memory_entry)
+      @memory_block.insert(entry: memory_entry, revision: 1)
     end
     memory_entries.each do |memory_entry|
-      @memory_block.delete(entry: memory_entry)
+      @memory_block.delete(entry: memory_entry, revision: 1)
     end
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, type, entry, raw|
-      assert_equal(type, :no_entry)
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+      assert_nil(entry)
     end
 
     # Do it again, but reverse the deletion list to make sure it's order
     # agnostic
     memory_entries.each do |memory_entry|
-      @memory_block.insert(entry: memory_entry)
+      @memory_block.insert(entry: memory_entry, revision: 1)
     end
     memory_entries.each do |memory_entry|
-      @memory_block.delete(entry: memory_entry)
+      @memory_block.delete(entry: memory_entry, revision: 1)
     end
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, type, entry, raw|
-      assert_equal(type, :no_entry)
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+      assert_nil(entry)
     end
   end
 
@@ -232,11 +217,52 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0010,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
-      @memory_block.delete(entry: memory_entry)
+      @memory_block.delete(entry: memory_entry, revision: 1)
     end
+  end
+
+  def test_since()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x0000,
+      length: 0x0004,
+      data: "data",
+      refs: "refs",
+    )
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x0008,
+      length: 0x0004,
+      data: "data",
+      refs: "refs",
+    )
+    @memory_block.insert(entry: memory_entry_2, revision: 2)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, entry, raw|
+      entries << entry
+    end
+    assert_equal([memory_entry_2], entries)
+  end
+
+  def test_since_delete()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x0000,
+      length: 0x0004,
+      data: "data",
+      refs: "refs",
+    )
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+    @memory_block.delete(entry: memory_entry_1, revision: 2)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, entry, raw|
+      entries << address
+      assert_nil(entry)
+    end
+   assert_equal([0x0000, 0x0001, 0x0002, 0x0003], entries)
   end
 end

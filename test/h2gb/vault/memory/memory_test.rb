@@ -1559,7 +1559,301 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     @memory = H2gb::Vault::Memory.new(raw: RAW)
   end
 
-  def test_get_changes_since()
+  def test_add_one()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x01)
+    end
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x1,
+      entries: [{
+        address: 0x00,
+        data: "A",
+        length: 0x01,
+        refs: nil,
+        raw: [0x00],
+      }]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_add_multiple()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x04, data: "B", length: 0x04)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x08, data: "C", length: 0x04)
+    end
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x3,
+      entries: [
+        {
+          address: 0x00,
+          data: "A",
+          length: 0x04,
+          refs: nil,
+          raw: [0x00, 0x01, 0x02, 0x03],
+        },
+        {
+          address: 0x04,
+          data: "B",
+          length: 0x04,
+          refs: nil,
+          raw: [0x04, 0x05, 0x06, 0x07],
+        },
+        {
+          address: 0x08,
+          data: "C",
+          length: 0x04,
+          refs: nil,
+          raw: [0x08, 0x09, 0x0a, 0x0b],
+        },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 1)
+    expected = {
+      revision: 0x3,
+      entries: [
+        {
+          address: 0x04,
+          data: "B",
+          length: 0x04,
+          refs: nil,
+          raw: [0x04, 0x05, 0x06, 0x07],
+        },
+        {
+          address: 0x08,
+          data: "C",
+          length: 0x04,
+          refs: nil,
+          raw: [0x08, 0x09, 0x0a, 0x0b],
+        },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 2)
+    expected = {
+      revision: 0x3,
+      entries: [
+        {
+          address: 0x08,
+          data: "C",
+          length: 0x04,
+          refs: nil,
+          raw: [0x08, 0x09, 0x0a, 0x0b],
+        },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 3)
+    expected = {
+      revision: 0x3,
+      entries: []
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_overwrite()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x02, data: "B", length: 0x04)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x04, data: "C", length: 0x04)
+    end
+
+    # TODO: Get rid of include_empty everywhere
+    result = @memory.get(address: 0x00, length: 0x10, since: 0, include_empty: true)
+    expected = {
+      revision: 0x3,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 1, include_empty: true)
+    expected = {
+      revision: 0x3,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 2, include_empty: true)
+    expected = {
+      revision: 0x3,
+      entries: [
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 3, include_empty: true)
+    expected = {
+      revision: 0x3,
+      entries: []
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_undo()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x04, data: "B", length: 0x02)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x08, data: "C", length: 0x02)
+    end
+    @memory.undo()
+    @memory.undo()
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0, include_empty: true)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08] },
+        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 3, include_empty: true)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08] },
+        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 4, include_empty: true)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 5, include_empty: true)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 6, include_empty: true)
+    expected = {
+      revision: 0x06,
+      entries: [],
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_redo()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x02, data: "B", length: 0x04)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x08, data: "C", length: 0x02)
+    end
+    @memory.undo()
+    @memory.undo()
+    @memory.undo()
+    @memory.redo()
+    @memory.redo()
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0, include_empty: true)
+    expected = {
+      revision: 0x09,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05] },
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 6, include_empty: true)
+    expected = {
+      revision: 0x09,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05] },
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 7, include_empty: true)
+    expected = {
+      revision: 0x09,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05] },
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 8, include_empty: true)
+    expected = {
+      revision: 0x09,
+      entries: [
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+      ]
+    }
+    assert_equal(expected, result)
   end
 end
 

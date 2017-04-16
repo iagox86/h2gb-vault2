@@ -12,34 +12,47 @@ module H2gb
   module Vault
     class Memory
       class MemoryBlock
-        def initialize(raw:)
+        def initialize(raw:, revision:0)
           @raw = raw
           @memory = {}
+
+          @raw.bytes().each_with_index() do |_, index|
+            @memory[index] = {
+              revision: revision,
+              entry: nil,
+            }
+          end
         end
 
-        def insert(entry:)
+        def insert(entry:, revision:)
           entry.each_address() do |i|
-            if @memory[i]
+            if @memory[i][:entry]
               raise(H2gb::Vault::Memory::MemoryError, "Tried to write to memory that's already in use")
             end
             if @raw[i].nil?
               raise(H2gb::Vault::Memory::MemoryError, "Tried to create an entry outside of the memory range")
             end
 
-            @memory[i] = entry
+            @memory[i] = {
+              revision: revision,
+              entry: entry,
+            }
           end
         end
 
-        def delete(entry:)
+        def delete(entry:, revision:)
           entry.each_address() do |i|
-            if @memory[i].nil?
+            if @memory[i][:entry].nil?
               raise(H2gb::Vault::Memory::MemoryError, "Tried to clear memory that's not in use")
             end
-            @memory[i] = nil
+            @memory[i] = {
+              revision: revision,
+              entry: nil,
+            }
           end
         end
 
-        def get_raw(entry:)
+        def _get_raw(entry:)
           return @raw[entry.address, entry.length].bytes()
         end
 
@@ -47,16 +60,28 @@ module H2gb
           i = address
 
           while i < address + length
-            if @memory[i]
-              # Pre-compute the next value of i, in case we're deleting the memory
-              next_i = @memory[i].address + @memory[i].length
-              yield(@memory[i].address, :entry, @memory[i], get_raw(entry: @memory[i]))
-              i = next_i
-            elsif @raw[i]
-              yield(i, :no_entry, nil, [@raw[i].ord])
-              i += 1
-            else
+            if @memory[i].nil?
               raise(H2gb::Vault::Memory::MemoryError, "Tried to retrieve an entry outside of the range")
+            end
+
+            entry = @memory[i][:entry]
+            revision = @memory[i][:revision]
+
+            if entry
+              # Pre-compute the next value of i, in case we're deleting the memory
+              next_i = entry.address + entry.length
+
+              if revision > since
+                yield(entry.address, entry, _get_raw(entry: entry))
+              end
+
+              i = next_i
+            else
+              if revision > since
+                yield(i, nil, [@raw[i].ord])
+              end
+
+              i += 1
             end
           end
         end

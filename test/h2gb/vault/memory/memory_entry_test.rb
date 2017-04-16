@@ -9,7 +9,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       length: 0x4321,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
     assert_equal(0x1234, memory_entry.address)
@@ -24,7 +23,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       length: 0x0000,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
     memory_entry.each_address() do |address|
@@ -38,7 +36,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
     addresses = []
@@ -55,7 +52,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
     addresses = []
@@ -73,7 +69,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       length: 0x0004,
       data: "data",
       refs: "refs",
-      revision: 0,
     )
 
     addresses = []
@@ -92,7 +87,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
         length: 0x0010,
         data: "data",
         refs: "refs",
-        revision: 0,
       )
     end
   end
@@ -104,7 +98,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
         length: -1,
         data: "data",
         refs: "refs",
-        revision: 0,
       )
     end
   end

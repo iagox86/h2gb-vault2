@@ -44,17 +44,18 @@ module H2gb
       private
       def _delete_internal(entry:)
         @transactions.add_to_current_transaction(type: ENTRY_DELETE, entry: entry)
-        @memory_block.delete(entry: entry)
+        @memory_block.delete(entry: entry, revision: @transactions.revision)
       end
 
       private
       def _insert_internal(entry:)
-        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |address, type, this_entry, raw|
-          if type == :entry
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |this_address, this_entry, raw|
+          if this_entry
             _delete_internal(entry: this_entry)
           end
         end
-        @memory_block.insert(entry: entry)
+
+        @memory_block.insert(entry: entry, revision: @transactions.revision)
 
         @transactions.add_to_current_transaction(type: ENTRY_INSERT, entry: entry)
       end
@@ -65,7 +66,7 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        entry = MemoryEntry.new(address: address, length: length, data: data, refs: refs, revision: @transactions.revision)
+        entry = MemoryEntry.new(address: address, length: length, data: data, refs: refs)
         _insert_internal(entry: entry)
       end
 
@@ -75,27 +76,23 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, type, entry, raw|
-          if type == :entry
-            _delete_internal(entry: entry)
+        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, this_entry, raw|
+          if this_entry
+            _delete_internal(entry: this_entry)
           end
         end
       end
 
       public
-      def get(address:, length:, include_empty: false, since: 0)
+      def get(address:, length:, include_empty: false, since: -1)
         result = {
           revision: @transactions.revision,
           entries: [],
         }
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, type, entry, raw|
+        @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw|
 
-#          if entry.revision < since
-#            next
-#          end
-
-          if type == :entry
+          if entry
             result[:entries] << {
               address: entry.address,
               data:    entry.data,
@@ -103,7 +100,7 @@ module H2gb
               refs:    entry.refs,
               raw:     raw,
             }
-          elsif type == :no_entry && include_empty
+          elsif include_empty
             result[:entries] << {
               address: this_address,
               data:    nil,

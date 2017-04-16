@@ -84,7 +84,7 @@ module H2gb
       end
 
       public
-      def get(address:, length:, include_empty: false, since: -1)
+      def get(address:, length:, since: -1)
         result = {
           revision: @transactions.revision,
           entries: [],
@@ -100,7 +100,7 @@ module H2gb
               refs:    entry.refs,
               raw:     raw,
             }
-          elsif include_empty
+          else
             result[:entries] << {
               address: this_address,
               data:    nil,

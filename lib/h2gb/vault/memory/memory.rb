@@ -66,7 +66,7 @@ module H2gb
       end
 
       public
-      def insert(address:, length:, data:, refs: nil) # TODO: refs
+      def insert(address:, length:, data:, refs: nil)
         if not @in_transaction
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end

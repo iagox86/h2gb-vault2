@@ -25,6 +25,7 @@ module H2gb
           end
         end
 
+        # TODO: xrefs are done very slowly / naively right now.. now that I have tests, clean them up!
         def _update_xrefs(entry:, revision:)
           entry.refs.each do |addr|
             @memory[addr][:revision] = revision

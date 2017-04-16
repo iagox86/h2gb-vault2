@@ -1554,7 +1554,6 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
   end
 end
 
-# TODO: Refs and Xrefs
 class H2gb::Vault::XrefsTest < Test::Unit::TestCase
   def setup()
     @memory = H2gb::Vault::Memory.new(raw: RAW)
@@ -2025,7 +2024,6 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
   end
 end
 
-# TODO: Save and restore
 class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
   def test_save_load()
     memory = H2gb::Vault::Memory.new(raw: RAW)

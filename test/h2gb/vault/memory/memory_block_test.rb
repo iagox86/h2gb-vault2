@@ -21,6 +21,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
+      revision: 0,
     )
 
     @memory_block.insert(entry: memory_entry)
@@ -38,6 +39,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
+      revision: 0,
     )
 
     @memory_block.insert(entry: memory_entry)
@@ -57,6 +59,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
+      revision: 0,
     )
 
     @memory_block.insert(entry: memory_entry)
@@ -78,6 +81,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0001,
       data: "data",
       refs: "refs",
+      revision: 0,
     )
 
     @memory_block.insert(entry: memory_entry)
@@ -99,18 +103,21 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0020,
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0030,
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
     ]
 
@@ -136,12 +143,14 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0008,
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
     ]
 
@@ -158,6 +167,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0010,
       data: "data",
       refs: "refs",
+      revision: 0,
     )
 
     @memory_block.insert(entry: memory_entry)
@@ -175,18 +185,21 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0020,
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x0030,
         length: 0x0010,
         data: "data",
         refs: "refs",
+        revision: 0,
       ),
     ]
 
@@ -219,6 +232,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       length: 0x0010,
       data: "data",
       refs: "refs",
+      revision: 0,
     )
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do

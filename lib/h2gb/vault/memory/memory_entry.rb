@@ -15,8 +15,9 @@ module H2gb
   module Vault
     class Memory
       class MemoryEntry
-        attr_reader :address, :length, :data, :refs
-        def initialize(address:, length:, data:, refs:)
+        attr_reader :address, :length, :data, :refs, :revision
+
+        def initialize(address:, length:, data:, refs:, revision:)
           if length < 0
             raise(H2gb::Vault::Memory::MemoryError, "Memory length can't be negative")
           end
@@ -25,10 +26,15 @@ module H2gb
             raise(H2gb::Vault::Memory::MemoryError, "Memory address can't be negative")
           end
 
+          if revision < 0
+            raise(H2gb::Vault::Memory::MemoryError, "Revision can't be negative")
+          end
+
           @address = address
           @length = length
           @data = data
           @refs = refs
+          @revision = revision
         end
 
         def each_address()

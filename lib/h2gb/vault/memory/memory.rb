@@ -65,7 +65,7 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        entry = MemoryEntry.new(address: address, length: length, data: data, refs: refs)
+        entry = MemoryEntry.new(address: address, length: length, data: data, refs: refs, revision: @transactions.revision)
         _insert_internal(entry: entry)
       end
 
@@ -83,13 +83,18 @@ module H2gb
       end
 
       public
-      def get(address:, length:, include_empty: false)
+      def get(address:, length:, include_empty: false, since: 0)
         result = {
           revision: @transactions.revision,
           entries: [],
         }
 
         @memory_block.each_entry_in_range(address: address, length: length) do |this_address, type, entry, raw|
+
+#          if entry.revision < since
+#            next
+#          end
+
           if type == :entry
             result[:entries] << {
               address: entry.address,

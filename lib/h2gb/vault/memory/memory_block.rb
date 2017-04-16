@@ -43,7 +43,7 @@ module H2gb
           return @raw[entry.address, entry.length].bytes()
         end
 
-        def each_entry_in_range(address:, length:)
+        def each_entry_in_range(address:, length:, since: 0)
           i = address
 
           while i < address + length

@@ -29,7 +29,7 @@ module H2gb
           @address = address
           @length = length
           @data = data
-          @refs = refs
+          @refs = refs || [] # Don't let refs be nil
         end
 
         def each_address()

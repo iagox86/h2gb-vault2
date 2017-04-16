@@ -25,6 +25,12 @@ module H2gb
           end
         end
 
+        def _update_xrefs(entry:, revision:)
+          entry.refs.each do |addr|
+            @memory[addr][:revision] = revision
+          end
+        end
+
         def insert(entry:, revision:)
           entry.each_address() do |i|
             if @memory[i][:entry]
@@ -39,6 +45,8 @@ module H2gb
               entry: entry,
             }
           end
+
+          _update_xrefs(entry: entry, revision: revision)
         end
 
         def delete(entry:, revision:)
@@ -51,6 +59,8 @@ module H2gb
               entry: nil,
             }
           end
+
+          _update_xrefs(entry: entry, revision: revision)
         end
 
         def _get_raw(entry:)

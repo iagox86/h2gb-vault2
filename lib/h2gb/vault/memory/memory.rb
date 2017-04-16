@@ -106,7 +106,7 @@ module H2gb
               address: this_address,
               data:    nil,
               length:  1,
-              refs:    nil,
+              refs:    [],
               raw:     raw,
               xrefs:   xrefs,
             }

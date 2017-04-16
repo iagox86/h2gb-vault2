@@ -2022,13 +2022,188 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
       ]
     }
     assert_equal(expected, result)
-
   end
 end
 
 # TODO: Save and restore
 class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
-  def setup()
-    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  def test_save_load()
+    memory = H2gb::Vault::Memory.new(raw: RAW)
+
+    memory.transaction() do
+      memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x04, 0x05])
+    end
+    memory.transaction() do
+      memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x04])
+    end
+    memory.transaction() do
+      memory.insert(address: 0x05, data: "C", length: 0x04, refs: [0x05, 0x0a])
+    end
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    result = memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [0x04, 0x05], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04],                   refs: [],           xrefs: [0x00] },
+        { address: 0x05, data: "C", length: 0x04, raw: [0x05, 0x06, 0x07, 0x08], refs: [0x05, 0x0a], xrefs: [0x00, 0x05] },
+        { address: 0x0a, data: nil, length: 0x01, raw: [0x0a],                   refs: [],           xrefs: [0x05] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = memory.get(address: 0x00, length: 0x10, since: 1)
+    expected = {
+      revision: 0x03,
+      entries: [
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04],                   refs: [],           xrefs: [0x00] },
+        { address: 0x05, data: "C", length: 0x04, raw: [0x05, 0x06, 0x07, 0x08], refs: [0x05, 0x0a], xrefs: [0x00, 0x05] },
+        { address: 0x0a, data: nil, length: 0x01, raw: [0x0a],                   refs: [],           xrefs: [0x05] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    result = memory.get(address: 0x00, length: 0x10, since: 2)
+    expected = {
+      revision: 0x03,
+      entries: [
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04],                   refs: [],           xrefs: [0x00] },
+        { address: 0x05, data: "C", length: 0x04, raw: [0x05, 0x06, 0x07, 0x08], refs: [0x05, 0x0a], xrefs: [0x00, 0x05] },
+        { address: 0x0a, data: nil, length: 0x01, raw: [0x0a],                   refs: [],           xrefs: [0x05] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    memory.undo()
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    memory.undo()
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    memory.undo()
+
+    result = memory.get(address: 0x00, length: 0x10, since: 3)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, raw: [0x00], refs: [], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, raw: [0x01], refs: [], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, raw: [0x02], refs: [], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, raw: [0x03], refs: [], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04], refs: [], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, raw: [0x05], refs: [], xrefs: [] },
+        { address: 0x06, data: nil, length: 0x01, raw: [0x06], refs: [], xrefs: [] },
+        { address: 0x07, data: nil, length: 0x01, raw: [0x07], refs: [], xrefs: [] },
+        { address: 0x08, data: nil, length: 0x01, raw: [0x08], refs: [], xrefs: [] },
+        { address: 0x0a, data: nil, length: 0x01, raw: [0x0a], refs: [], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = memory.get(address: 0x00, length: 0x10, since: 4)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, raw: [0x00], refs: [], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, raw: [0x01], refs: [], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, raw: [0x02], refs: [], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, raw: [0x03], refs: [], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04], refs: [], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, raw: [0x05], refs: [], xrefs: [] },
+        { address: 0x06, data: nil, length: 0x01, raw: [0x06], refs: [], xrefs: [] },
+        { address: 0x07, data: nil, length: 0x01, raw: [0x07], refs: [], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = memory.get(address: 0x00, length: 0x10, since: 5)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: nil, length: 0x01, raw: [0x00], refs: [], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, raw: [0x01], refs: [], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, raw: [0x02], refs: [], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, raw: [0x03], refs: [], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04], refs: [], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, raw: [0x05], refs: [], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    memory.redo()
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    memory.redo()
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    memory.redo()
+
+    result = memory.get(address: 0x00, length: 0x10, since: 6)
+    expected = {
+      revision: 0x09,
+      entries: [
+        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [0x04, 0x05], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04],                   refs: [],           xrefs: [0x00] },
+        { address: 0x05, data: "C", length: 0x04, raw: [0x05, 0x06, 0x07, 0x08], refs: [0x05, 0x0a], xrefs: [0x00, 0x05] },
+        { address: 0x0a, data: nil, length: 0x01, raw: [0x0a],                   refs: [],           xrefs: [0x05] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = memory.get(address: 0x00, length: 0x10, since: 7)
+    expected = {
+      revision: 0x09,
+      entries: [
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04],                   refs: [],           xrefs: [0x00] },
+        { address: 0x05, data: "C", length: 0x04, raw: [0x05, 0x06, 0x07, 0x08], refs: [0x05, 0x0a], xrefs: [0x00, 0x05] },
+        { address: 0x0a, data: nil, length: 0x01, raw: [0x0a],                   refs: [],           xrefs: [0x05] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    # Save/load throughout this function to make sure it's working right
+    memory = H2gb::Vault::Memory.load(memory.dump())
+    assert_not_nil(memory)
+
+    result = memory.get(address: 0x00, length: 0x10, since: 8)
+    expected = {
+      revision: 0x09,
+      entries: [
+        { address: 0x04, data: nil, length: 0x01, raw: [0x04],                   refs: [],           xrefs: [0x00] },
+        { address: 0x05, data: "C", length: 0x04, raw: [0x05, 0x06, 0x07, 0x08], refs: [0x05, 0x0a], xrefs: [0x00, 0x05] },
+        { address: 0x0a, data: nil, length: 0x01, raw: [0x0a],                   refs: [],           xrefs: [0x05] },
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_bad_load()
+    assert_raises(H2gb::Vault::Memory::MemoryError) do
+      H2gb::Vault::Memory.load("Not valid YAML")
+    end
   end
 end

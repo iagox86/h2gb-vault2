@@ -9,6 +9,8 @@
 # references, cross-references, undo/redo, save/load, and more!
 ##
 
+require 'yaml'
+
 require 'h2gb/vault/memory/memory_block'
 require 'h2gb/vault/memory/memory_entry'
 require 'h2gb/vault/memory/memory_error'
@@ -28,6 +30,7 @@ module H2gb
           ENTRY_DELETE => ENTRY_INSERT,
         })
         @in_transaction = false
+
         @mutex = Mutex.new()
       end
 
@@ -38,6 +41,8 @@ module H2gb
 
           @transactions.increment()
           yield
+
+          @in_transaction = false
         end
       end
 
@@ -85,35 +90,37 @@ module H2gb
 
       public
       def get(address:, length:, since: -1)
-        result = {
-          revision: @transactions.revision,
-          entries: [],
-        }
+        @mutex.synchronize() do
+          result = {
+            revision: @transactions.revision,
+            entries: [],
+          }
 
-        @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, xrefs|
+          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, xrefs|
 
-          if entry
-            result[:entries] << {
-              address: entry.address,
-              data:    entry.data,
-              length:  entry.length,
-              refs:    entry.refs,
-              raw:     raw,
-              xrefs:   xrefs,
-            }
-          else
-            result[:entries] << {
-              address: this_address,
-              data:    nil,
-              length:  1,
-              refs:    [],
-              raw:     raw,
-              xrefs:   xrefs,
-            }
+            if entry
+              result[:entries] << {
+                address: entry.address,
+                data:    entry.data,
+                length:  entry.length,
+                refs:    entry.refs,
+                raw:     raw,
+                xrefs:   xrefs,
+              }
+            else
+              result[:entries] << {
+                address: this_address,
+                data:    nil,
+                length:  1,
+                refs:    [],
+                raw:     raw,
+                xrefs:   xrefs,
+              }
+            end
           end
-        end
 
-        return result
+          return result
+        end
       end
 
       private
@@ -129,21 +136,45 @@ module H2gb
 
       public
       def undo()
-        @transactions.undo_transaction() do |action, entry|
-          _apply(action: action, entry: entry)
+        @mutex.synchronize() do
+          @transactions.undo_transaction() do |action, entry|
+            _apply(action: action, entry: entry)
+          end
         end
       end
 
       public
       def redo()
-        @transactions.redo_transaction() do |action, entry|
-          _apply(action: action, entry: entry)
+        @mutex.synchronize() do
+          @transactions.redo_transaction() do |action, entry|
+            _apply(action: action, entry: entry)
+          end
         end
       end
 
       public
       def to_s()
-        return "Revision: %d => %s" % [@transactions.revision, @memory_block]
+        @mutex.synchronize() do
+          return "Revision: %d => %s" % [@transactions.revision, @memory_block]
+        end
+      end
+
+      public
+      def dump()
+        @mutex.synchronize() do
+          return YAML::dump(self)
+        end
+      end
+
+      public
+      def self.load(str)
+        memory = YAML::load(str)
+
+        if memory.class != H2gb::Vault::Memory
+          raise(MemoryError, "Couldn't load the file")
+        end
+
+        return memory
       end
     end
   end

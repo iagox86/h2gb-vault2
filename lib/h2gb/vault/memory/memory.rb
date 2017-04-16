@@ -49,7 +49,7 @@ module H2gb
 
       private
       def _insert_internal(entry:)
-        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |this_address, this_entry, raw|
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |this_address, this_entry, raw, xrefs|
           if this_entry
             _delete_internal(entry: this_entry)
           end
@@ -76,7 +76,7 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, this_entry, raw|
+        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, this_entry, raw, xrefs|
           if this_entry
             _delete_internal(entry: this_entry)
           end
@@ -90,7 +90,7 @@ module H2gb
           entries: [],
         }
 
-        @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw|
+        @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, xrefs|
 
           if entry
             result[:entries] << {
@@ -99,6 +99,7 @@ module H2gb
               length:  entry.length,
               refs:    entry.refs,
               raw:     raw,
+              xrefs:   xrefs,
             }
           else
             result[:entries] << {
@@ -107,6 +108,7 @@ module H2gb
               length:  1,
               refs:    nil,
               raw:     raw,
+              xrefs:   xrefs,
             }
           end
         end

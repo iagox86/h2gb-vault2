@@ -28,7 +28,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x1,
       entries: [
-        { address: 0x00, data: "A", length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x00, data: "A", length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
       ]
     }
 
@@ -44,7 +44,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 1,
       entries: [
-        { address: 0x00, data: "A", length: 0x08, refs: nil, raw: [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07] },
+        { address: 0x00, data: "A", length: 0x08, refs: nil, raw: [0x00, 0x01, 0x02, 0x03, 0x04, 0x05, 0x06, 0x07], xrefs: [] },
       ]
     }
 
@@ -60,7 +60,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        { address: 0x80, data: "A", length: 0x01, refs: nil, raw: [0x80] },
+        { address: 0x80, data: "A", length: 0x01, refs: nil, raw: [0x80], xrefs: [] },
       ]
     }
 
@@ -81,8 +81,8 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
       ]
     }
 
@@ -100,8 +100,8 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 1,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
       ]
     }
 
@@ -119,8 +119,8 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x80, data: "B", length: 0x02, refs: nil, raw: [0x80, 0x81] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x80, data: "B", length: 0x02, refs: nil, raw: [0x80, 0x81], xrefs: [] },
       ]
     }
 
@@ -139,7 +139,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: "B", length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x00, data: "B", length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
       ]
     }
 
@@ -158,14 +158,14 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: "B", length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
-        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06] },
-        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07] },
+        { address: 0x00, data: "B", length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
+        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06], xrefs: [] },
+        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07], xrefs: [] },
       ]
     }
 
@@ -184,14 +184,14 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "B", length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
-        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06] },
-        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "B", length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
+        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06], xrefs: [] },
+        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07], xrefs: [] },
       ]
     }
 
@@ -213,11 +213,11 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: "C", length: 0x02, refs: nil, raw: [0x01, 0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: "C", length: 0x02, refs: nil, raw: [0x01, 0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
 
@@ -239,7 +239,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "C", length: 0x80, refs: nil, raw: (0x00..0x7F).to_a()},
+        { address: 0x00, data: "C", length: 0x80, refs: nil, raw: (0x00..0x7F).to_a(), xrefs: [] },
       ]
     }
 
@@ -312,7 +312,7 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
       ],
     }
 
@@ -332,10 +332,10 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
       ],
     }
 
@@ -355,7 +355,7 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: "A", length: 0x10, refs: nil, raw: (0x00..0x0F).to_a()},
+        { address: 0x00, data: "A", length: 0x10, refs: nil, raw: (0x00..0x0F).to_a(), xrefs: [] },
       ],
     }
 
@@ -375,10 +375,10 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
       ],
     }
 
@@ -398,14 +398,14 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
-        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06] },
-        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
+        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06], xrefs: [] },
+        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07], xrefs: [] },
       ],
     }
 
@@ -427,18 +427,18 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
-        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06] },
-        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07] },
-        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08] },
-        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09] },
-        { address: 0x0a, data: nil, length: 0x01, refs: nil, raw: [0x0a] },
-        { address: 0x0b, data: nil, length: 0x01, refs: nil, raw: [0x0b] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
+        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06], xrefs: [] },
+        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07], xrefs: [] },
+        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08], xrefs: [] },
+        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09], xrefs: [] },
+        { address: 0x0a, data: nil, length: 0x01, refs: nil, raw: [0x0a], xrefs: [] },
+        { address: 0x0b, data: nil, length: 0x01, refs: nil, raw: [0x0b], xrefs: [] },
       ],
     }
 
@@ -459,16 +459,16 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: "A", length: 0x08, refs: nil, raw: (0x00..0x07).to_a() },
-        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08] },
-        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09] },
-        { address: 0x0a, data: nil, length: 0x01, refs: nil, raw: [0x0a] },
-        { address: 0x0b, data: nil, length: 0x01, refs: nil, raw: [0x0b] },
-        { address: 0x0c, data: nil, length: 0x01, refs: nil, raw: [0x0c] },
-        { address: 0x0d, data: nil, length: 0x01, refs: nil, raw: [0x0d] },
-        { address: 0x0e, data: nil, length: 0x01, refs: nil, raw: [0x0e] },
-        { address: 0x0f, data: nil, length: 0x01, refs: nil, raw: [0x0f] },
-        { address: 0x10, data: "C", length: 0x08, refs: nil, raw: (0x10..0x17).to_a() }
+        { address: 0x00, data: "A", length: 0x08, refs: nil, raw: (0x00..0x07).to_a(), xrefs: [] },
+        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08], xrefs: [] },
+        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09], xrefs: [] },
+        { address: 0x0a, data: nil, length: 0x01, refs: nil, raw: [0x0a], xrefs: [] },
+        { address: 0x0b, data: nil, length: 0x01, refs: nil, raw: [0x0b], xrefs: [] },
+        { address: 0x0c, data: nil, length: 0x01, refs: nil, raw: [0x0c], xrefs: [] },
+        { address: 0x0d, data: nil, length: 0x01, refs: nil, raw: [0x0d], xrefs: [] },
+        { address: 0x0e, data: nil, length: 0x01, refs: nil, raw: [0x0e], xrefs: [] },
+        { address: 0x0f, data: nil, length: 0x01, refs: nil, raw: [0x0f], xrefs: [] },
+        { address: 0x10, data: "C", length: 0x08, refs: nil, raw: (0x10..0x17).to_a(), xrefs: [] }
       ],
     }
     assert_equal(expected, result)
@@ -489,40 +489,40 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: "A", length: 0x10, refs: nil, raw: (0x00..0x0F).to_a() },
-        { address: 0x10, data: nil, length: 0x01, refs: nil, raw: [0x10] },
-        { address: 0x11, data: nil, length: 0x01, refs: nil, raw: [0x11] },
-        { address: 0x12, data: nil, length: 0x01, refs: nil, raw: [0x12] },
-        { address: 0x13, data: nil, length: 0x01, refs: nil, raw: [0x13] },
-        { address: 0x14, data: nil, length: 0x01, refs: nil, raw: [0x14] },
-        { address: 0x15, data: nil, length: 0x01, refs: nil, raw: [0x15] },
-        { address: 0x16, data: nil, length: 0x01, refs: nil, raw: [0x16] },
-        { address: 0x17, data: nil, length: 0x01, refs: nil, raw: [0x17] },
-        { address: 0x18, data: nil, length: 0x01, refs: nil, raw: [0x18] },
-        { address: 0x19, data: nil, length: 0x01, refs: nil, raw: [0x19] },
-        { address: 0x1a, data: nil, length: 0x01, refs: nil, raw: [0x1a] },
-        { address: 0x1b, data: nil, length: 0x01, refs: nil, raw: [0x1b] },
-        { address: 0x1c, data: nil, length: 0x01, refs: nil, raw: [0x1c] },
-        { address: 0x1d, data: nil, length: 0x01, refs: nil, raw: [0x1d] },
-        { address: 0x1e, data: nil, length: 0x01, refs: nil, raw: [0x1e] },
-        { address: 0x1f, data: nil, length: 0x01, refs: nil, raw: [0x1f] },
-        { address: 0x20, data: nil, length: 0x01, refs: nil, raw: [0x20] },
-        { address: 0x21, data: nil, length: 0x01, refs: nil, raw: [0x21] },
-        { address: 0x22, data: nil, length: 0x01, refs: nil, raw: [0x22] },
-        { address: 0x23, data: nil, length: 0x01, refs: nil, raw: [0x23] },
-        { address: 0x24, data: nil, length: 0x01, refs: nil, raw: [0x24] },
-        { address: 0x25, data: nil, length: 0x01, refs: nil, raw: [0x25] },
-        { address: 0x26, data: nil, length: 0x01, refs: nil, raw: [0x26] },
-        { address: 0x27, data: nil, length: 0x01, refs: nil, raw: [0x27] },
-        { address: 0x28, data: nil, length: 0x01, refs: nil, raw: [0x28] },
-        { address: 0x29, data: nil, length: 0x01, refs: nil, raw: [0x29] },
-        { address: 0x2a, data: nil, length: 0x01, refs: nil, raw: [0x2a] },
-        { address: 0x2b, data: nil, length: 0x01, refs: nil, raw: [0x2b] },
-        { address: 0x2c, data: nil, length: 0x01, refs: nil, raw: [0x2c] },
-        { address: 0x2d, data: nil, length: 0x01, refs: nil, raw: [0x2d] },
-        { address: 0x2e, data: nil, length: 0x01, refs: nil, raw: [0x2e] },
-        { address: 0x2f, data: nil, length: 0x01, refs: nil, raw: [0x2f] },
-        { address: 0x30, data: "D", length: 0x10, refs: nil, raw: (0x30..0x3F).to_a() }
+        { address: 0x00, data: "A", length: 0x10, refs: nil, raw: (0x00..0x0F).to_a(), xrefs: [] },
+        { address: 0x10, data: nil, length: 0x01, refs: nil, raw: [0x10], xrefs: [] },
+        { address: 0x11, data: nil, length: 0x01, refs: nil, raw: [0x11], xrefs: [] },
+        { address: 0x12, data: nil, length: 0x01, refs: nil, raw: [0x12], xrefs: [] },
+        { address: 0x13, data: nil, length: 0x01, refs: nil, raw: [0x13], xrefs: [] },
+        { address: 0x14, data: nil, length: 0x01, refs: nil, raw: [0x14], xrefs: [] },
+        { address: 0x15, data: nil, length: 0x01, refs: nil, raw: [0x15], xrefs: [] },
+        { address: 0x16, data: nil, length: 0x01, refs: nil, raw: [0x16], xrefs: [] },
+        { address: 0x17, data: nil, length: 0x01, refs: nil, raw: [0x17], xrefs: [] },
+        { address: 0x18, data: nil, length: 0x01, refs: nil, raw: [0x18], xrefs: [] },
+        { address: 0x19, data: nil, length: 0x01, refs: nil, raw: [0x19], xrefs: [] },
+        { address: 0x1a, data: nil, length: 0x01, refs: nil, raw: [0x1a], xrefs: [] },
+        { address: 0x1b, data: nil, length: 0x01, refs: nil, raw: [0x1b], xrefs: [] },
+        { address: 0x1c, data: nil, length: 0x01, refs: nil, raw: [0x1c], xrefs: [] },
+        { address: 0x1d, data: nil, length: 0x01, refs: nil, raw: [0x1d], xrefs: [] },
+        { address: 0x1e, data: nil, length: 0x01, refs: nil, raw: [0x1e], xrefs: [] },
+        { address: 0x1f, data: nil, length: 0x01, refs: nil, raw: [0x1f], xrefs: [] },
+        { address: 0x20, data: nil, length: 0x01, refs: nil, raw: [0x20], xrefs: [] },
+        { address: 0x21, data: nil, length: 0x01, refs: nil, raw: [0x21], xrefs: [] },
+        { address: 0x22, data: nil, length: 0x01, refs: nil, raw: [0x22], xrefs: [] },
+        { address: 0x23, data: nil, length: 0x01, refs: nil, raw: [0x23], xrefs: [] },
+        { address: 0x24, data: nil, length: 0x01, refs: nil, raw: [0x24], xrefs: [] },
+        { address: 0x25, data: nil, length: 0x01, refs: nil, raw: [0x25], xrefs: [] },
+        { address: 0x26, data: nil, length: 0x01, refs: nil, raw: [0x26], xrefs: [] },
+        { address: 0x27, data: nil, length: 0x01, refs: nil, raw: [0x27], xrefs: [] },
+        { address: 0x28, data: nil, length: 0x01, refs: nil, raw: [0x28], xrefs: [] },
+        { address: 0x29, data: nil, length: 0x01, refs: nil, raw: [0x29], xrefs: [] },
+        { address: 0x2a, data: nil, length: 0x01, refs: nil, raw: [0x2a], xrefs: [] },
+        { address: 0x2b, data: nil, length: 0x01, refs: nil, raw: [0x2b], xrefs: [] },
+        { address: 0x2c, data: nil, length: 0x01, refs: nil, raw: [0x2c], xrefs: [] },
+        { address: 0x2d, data: nil, length: 0x01, refs: nil, raw: [0x2d], xrefs: [] },
+        { address: 0x2e, data: nil, length: 0x01, refs: nil, raw: [0x2e], xrefs: [] },
+        { address: 0x2f, data: nil, length: 0x01, refs: nil, raw: [0x2f], xrefs: [] },
+        { address: 0x30, data: "D", length: 0x10, refs: nil, raw: (0x30..0x3F).to_a(), xrefs: [] }
       ],
     }
     assert_equal(expected, result)
@@ -548,9 +548,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
       ],
     }
 
@@ -572,9 +572,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -584,10 +584,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -597,11 +597,11 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -611,12 +611,12 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -639,10 +639,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 4,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ]
     }
 
@@ -667,9 +667,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -682,10 +682,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -696,11 +696,11 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -711,12 +711,12 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -741,10 +741,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -754,11 +754,11 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -783,7 +783,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
       ]
     }
 
@@ -799,7 +799,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -811,8 +811,8 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: "B", length: 0x02, refs: nil, raw: [0x01, 0x02] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: "B", length: 0x02, refs: nil, raw: [0x01, 0x02], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -822,8 +822,8 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -844,9 +844,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: "C", length: 0x02, refs: nil, raw: [0x01, 0x02] },
-        { address: 0x03, data: "D", length: 0x02, refs: nil, raw: [0x03, 0x04] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: "C", length: 0x02, refs: nil, raw: [0x01, 0x02], xrefs: [] },
+        { address: 0x03, data: "D", length: 0x02, refs: nil, raw: [0x03, 0x04], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -857,9 +857,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -886,8 +886,8 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
       ]
     }
 
@@ -913,12 +913,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -928,11 +928,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -942,10 +942,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -955,9 +955,9 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -981,8 +981,8 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        { address: 0x00, data: "C", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
+        { address: 0x00, data: "C", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
       ]
     }
 
@@ -1007,9 +1007,9 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -1022,10 +1022,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -1036,11 +1036,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -1051,12 +1051,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -1067,11 +1067,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -1082,10 +1082,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -1095,10 +1095,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
       ],
     }
     assert_equal(expected, result)
@@ -1123,12 +1123,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     assert_equal({
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ],
     }, result)
 
@@ -1138,11 +1138,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1157,12 +1157,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
-        { address: 0x06, data: "D", length: 0x02, refs: nil, raw: [0x06, 0x07] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
+        { address: 0x06, data: "D", length: 0x02, refs: nil, raw: [0x06, 0x07], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1187,8 +1187,8 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
+        { address: 0x00, data: "A", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
       ]
     }
 
@@ -1217,7 +1217,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        { address: 0x00, data: "C", length: 0x03, refs: nil, raw: [0x00, 0x01, 0x02] },
+        { address: 0x00, data: "C", length: 0x03, refs: nil, raw: [0x00, 0x01, 0x02], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1247,11 +1247,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        { address: 0x00, data: "C", length: 0x02, refs: nil, raw: [0x00, 0x01] },
-        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03] },
-        { address: 0x04, data: "D", length: 0x02, refs: nil, raw: [0x04, 0x05] },
-        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06] },
-        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07] },
+        { address: 0x00, data: "C", length: 0x02, refs: nil, raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: nil, raw: [0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: "D", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
+        { address: 0x06, data: nil, length: 0x01, refs: nil, raw: [0x06], xrefs: [] },
+        { address: 0x07, data: nil, length: 0x01, refs: nil, raw: [0x07], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1262,11 +1262,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: "E", length: 0x02, refs: nil, raw: [0x01, 0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "D", length: 0x02, refs: nil, raw: [0x04, 0x05] },
-        { address: 0x06, data: "F", length: 0x02, refs: nil, raw: [0x06, 0x07] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: "E", length: 0x02, refs: nil, raw: [0x01, 0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "D", length: 0x02, refs: nil, raw: [0x04, 0x05], xrefs: [] },
+        { address: 0x06, data: "F", length: 0x02, refs: nil, raw: [0x06, 0x07], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1288,9 +1288,9 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x1,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: "A", length: 0x02, refs: nil, raw: [0x01, 0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: "A", length: 0x02, refs: nil, raw: [0x01, 0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
       ]
     }
 
@@ -1306,7 +1306,7 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x1,
       entries: [
-        { address: 0x00, data: "A", length: 0x01, refs: nil, raw: [0x00] },
+        { address: 0x00, data: "A", length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
       ]
     }
 
@@ -1328,9 +1328,9 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        { address: 0x00, data: "A", length: 0x04, refs: nil, raw: [0x00, 0x01, 0x02, 0x03] },
-        { address: 0x04, data: "B", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
-        { address: 0x08, data: "C", length: 0x04, refs: nil, raw: [0x08, 0x09, 0x0a, 0x0b] },
+        { address: 0x00, data: "A", length: 0x04, refs: nil, raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: "B", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
+        { address: 0x08, data: "C", length: 0x04, refs: nil, raw: [0x08, 0x09, 0x0a, 0x0b], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1339,8 +1339,8 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        { address: 0x04, data: "B", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
-        { address: 0x08, data: "C", length: 0x04, refs: nil, raw: [0x08, 0x09, 0x0a, 0x0b] },
+        { address: 0x04, data: "B", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
+        { address: 0x08, data: "C", length: 0x04, refs: nil, raw: [0x08, 0x09, 0x0a, 0x0b], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1349,7 +1349,7 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        { address: 0x08, data: "C", length: 0x04, refs: nil, raw: [0x08, 0x09, 0x0a, 0x0b] },
+        { address: 0x08, data: "C", length: 0x04, refs: nil, raw: [0x08, 0x09, 0x0a, 0x0b], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1377,11 +1377,11 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1390,11 +1390,11 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1403,9 +1403,9 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02] },
-        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03] },
-        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07] },
+        { address: 0x02, data: nil, length: 0x01, refs: nil, raw: [0x02], xrefs: [] },
+        { address: 0x03, data: nil, length: 0x01, refs: nil, raw: [0x03], xrefs: [] },
+        { address: 0x04, data: "C", length: 0x04, refs: nil, raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1436,12 +1436,12 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
-        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08] },
-        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
+        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08], xrefs: [] },
+        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1450,12 +1450,12 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
-        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08] },
-        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
+        { address: 0x08, data: nil, length: 0x01, refs: nil, raw: [0x08], xrefs: [] },
+        { address: 0x09, data: nil, length: 0x01, refs: nil, raw: [0x09], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1464,10 +1464,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04] },
-        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: nil, raw: [0x04], xrefs: [] },
+        { address: 0x05, data: nil, length: 0x01, refs: nil, raw: [0x05], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1476,8 +1476,8 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1511,10 +1511,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05] },
-        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05], xrefs: [] },
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1523,10 +1523,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05] },
-        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05], xrefs: [] },
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1535,10 +1535,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00] },
-        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01] },
-        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05] },
-        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+        { address: 0x00, data: nil, length: 0x01, refs: nil, raw: [0x00], xrefs: [] },
+        { address: 0x01, data: nil, length: 0x01, refs: nil, raw: [0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x04, refs: nil, raw: [0x02, 0x03, 0x04, 0x05], xrefs: [] },
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1547,7 +1547,7 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09] },
+        { address: 0x08, data: "C", length: 0x02, refs: nil, raw: [0x08, 0x09], xrefs: [] },
       ]
     }
     assert_equal(expected, result)
@@ -1574,7 +1574,7 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
 #      revision: 0x02,
 #      entries: [
 #        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: nil, xrefs: [0x04] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x00] },
+#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x00], xrefs: [] },
 #      ]
 #    }
 #    assert_equal(expected, result)

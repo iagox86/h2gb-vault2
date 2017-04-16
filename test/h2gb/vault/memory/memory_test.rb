@@ -1554,9 +1554,36 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
   end
 end
 
-class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
+# TODO: Refs and Xrefs
+class H2gb::Vault::XrefsTest < Test::Unit::TestCase
   def setup()
     @memory = H2gb::Vault::Memory.new(raw: RAW)
   end
 
+#  def test_xref()
+#    @memory.transaction() do
+#      @memory.insert(address: 0x00, data: "A", length: 0x04)
+#    end
+#
+#    @memory.transaction() do
+#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x00])
+#    end
+#
+#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+#    expected = {
+#      revision: 0x02,
+#      entries: [
+#        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: nil, xrefs: [0x04] },
+#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x00] },
+#      ]
+#    }
+#    assert_equal(expected, result)
+#  end
+end
+
+# TODO: Save and restore
+class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
 end

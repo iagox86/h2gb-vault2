@@ -15,6 +15,7 @@ module H2gb
         def initialize(raw:, revision:0)
           @raw = raw
           @memory = {}
+          @xrefs = {}
 
           @raw.bytes().each_with_index() do |_, index|
             @memory[index] = {
@@ -56,6 +57,40 @@ module H2gb
           return @raw[entry.address, entry.length].bytes()
         end
 
+        def _get_xrefs(address:)
+          xrefs = []
+          @memory.each_value do |entry|
+            entry = entry[:entry]
+            if entry.nil?
+              next
+            end
+            if entry.refs.nil?
+              next
+            end
+
+            if entry.refs.include?(address)
+              xrefs << entry.address
+            end
+          end
+
+          return xrefs
+        end
+
+        def _get_entry(address:)
+          entry = @memory[address][:entry]
+
+          xrefs = []
+          if entry
+            entry.each_address() do |this_address|
+              xrefs += _get_xrefs(address: this_address)
+            end
+          else
+            xrefs += _get_xrefs(address: address)
+          end
+
+          return entry, xrefs.uniq().sort()
+        end
+
         def each_entry_in_range(address:, length:, since: 0)
           i = address
 
@@ -64,7 +99,7 @@ module H2gb
               raise(H2gb::Vault::Memory::MemoryError, "Tried to retrieve an entry outside of the range")
             end
 
-            entry = @memory[i][:entry]
+            entry, xrefs = _get_entry(address: i)
             revision = @memory[i][:revision]
 
             if entry
@@ -72,13 +107,13 @@ module H2gb
               next_i = entry.address + entry.length
 
               if revision > since
-                yield(entry.address, entry, _get_raw(entry: entry))
+                yield(entry.address, entry, _get_raw(entry: entry), xrefs)
               end
 
               i = next_i
             else
               if revision > since
-                yield(i, nil, [@raw[i].ord])
+                yield(i, nil, [@raw[i].ord], xrefs)
               end
 
               i += 1

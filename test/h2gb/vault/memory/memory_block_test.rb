@@ -10,39 +10,29 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
   end
 
   def test_empty()
-    @memory_block.each_entry_in_range(address: 0x00, length: 0xFF) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x00, length: 0xFF) do |address, entry, raw, xrefs|
       assert_nil(entry)
     end
   end
 
   def test_single_byte()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0000,
-      length: 0x0001,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0001, data: "data", refs: [])
 
     @memory_block.insert(entry: memory_entry, revision: 1)
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0001) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0001) do |address, entry, raw, xrefs|
       entries << entry
     end
     assert_equal([memory_entry], entries)
   end
 
   def test_each_entry_no_entry()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0000,
-      length: 0x0001,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0001, data: "data", refs: [])
 
     @memory_block.insert(entry: memory_entry, revision: 1)
 
-    @memory_block.each_entry_in_range(address: 0x0010, length: 0x0004) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0010, length: 0x0004) do |address, entry, raw, xrefs|
       assert_nil(entry)
       assert_equal(1, raw.length())
       # Check against the address, because that's how I set up the memory in setup()
@@ -51,17 +41,12 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
   end
 
   def test_each_entry_outside_raw()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0000,
-      length: 0x0001,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0001, data: "data", refs: [])
 
     @memory_block.insert(entry: memory_entry, revision: 1)
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
-      @memory_block.each_entry_in_range(address: 0x00F8, length: 0x0010) do |address, entry, raw|
+      @memory_block.each_entry_in_range(address: 0x00F8, length: 0x0010) do |address, entry, raw, xrefs|
         assert_nil(entry)
         assert_equal(1, raw.length())
         # Check against the address, because that's how I set up the memory in setup()
@@ -71,15 +56,10 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
   end
 
   def test_single_byte_middle_of_range()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0080,
-      length: 0x0001,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0080, length: 0x0001, data: "data", refs: [])
 
     @memory_block.insert(entry: memory_entry, revision: 1)
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw, xrefs|
       if entry
         assert_equal(0x80, address)
         assert_equal([0x80], raw)
@@ -92,24 +72,9 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
 
   def test_multiple_bytes()
     memory_entries = [
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0010,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0020,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0030,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0010, length: 0x0010, data: "data", refs: []),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0020, length: 0x0010, data: "data", refs: []),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0030, length: 0x0010, data: "data", refs: []),
     ]
 
     memory_entries.each do |memory_entry|
@@ -117,7 +82,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     end
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw, xrefs|
       if entry
         entries << entry
       else
@@ -129,18 +94,8 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
 
   def test_overlapping()
     memory_entries = [
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0000,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0008,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0010, data: "data", refs: []),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0010, data: "data", refs: []),
     ]
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
@@ -151,41 +106,21 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
   end
 
   def test_delete()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0000,
-      length: 0x0010,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0010, data: "data", refs: [])
 
     @memory_block.insert(entry: memory_entry, revision: 1)
     @memory_block.delete(entry: memory_entry, revision: 1)
 
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF) do |address, entry, raw, xrefs|
       assert_nil(entry)
     end
   end
 
   def test_delete_multiple()
     memory_entries = [
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0010,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0020,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x0030,
-        length: 0x0010,
-        data: "data",
-        refs: "refs",
-      ),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0010, length: 0x0010, data: "data", refs: []),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0020, length: 0x0010, data: "data", refs: []),
+      H2gb::Vault::Memory::MemoryEntry.new(address: 0x0030, length: 0x0010, data: "data", refs: []),
     ]
 
     memory_entries.each do |memory_entry|
@@ -194,7 +129,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     memory_entries.each do |memory_entry|
       @memory_block.delete(entry: memory_entry, revision: 1)
     end
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw, xrefs|
       assert_nil(entry)
     end
 
@@ -206,18 +141,13 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     memory_entries.each do |memory_entry|
       @memory_block.delete(entry: memory_entry, revision: 1)
     end
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, entry, raw, xrefs|
       assert_nil(entry)
     end
   end
 
   def test_delete_empty()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0000,
-      length: 0x0010,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0010, data: "data", refs: [])
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       @memory_block.delete(entry: memory_entry, revision: 1)
@@ -225,44 +155,255 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
   end
 
   def test_since()
-    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0000,
-      length: 0x0004,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [])
     @memory_block.insert(entry: memory_entry_1, revision: 1)
 
-    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0008,
-      length: 0x0004,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: [])
     @memory_block.insert(entry: memory_entry_2, revision: 2)
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, entry, raw, xrefs|
       entries << entry
     end
     assert_equal([memory_entry_2], entries)
   end
 
   def test_since_delete()
-    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x0000,
-      length: 0x0004,
-      data: "data",
-      refs: "refs",
-    )
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [])
     @memory_block.insert(entry: memory_entry_1, revision: 1)
     @memory_block.delete(entry: memory_entry_1, revision: 2)
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, entry, raw|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, entry, raw, xrefs|
       entries << address
       assert_nil(entry)
     end
    assert_equal([0x0000, 0x0001, 0x0002, 0x0003], entries)
+  end
+
+  def test_basic_xref()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x04])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: [0x00])
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { entry: memory_entry_1, xrefs: [0x04] },
+      { entry: memory_entry_2, xrefs: [0x00] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_xref_to_middle()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x06])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: nil)
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { entry: memory_entry_1, xrefs: [] },
+      { entry: memory_entry_2, xrefs: [0x00] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_multiple_same_refs()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x04, 0x06])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: nil)
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { entry: memory_entry_1, xrefs: [] },
+      { entry: memory_entry_2, xrefs: [0x00] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_multiple_refs()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x04, 0x08])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: nil)
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    memory_entry_3 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: nil)
+    @memory_block.insert(entry: memory_entry_3, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { entry: memory_entry_1, xrefs: [] },
+      { entry: memory_entry_2, xrefs: [0x00] },
+      { entry: memory_entry_3, xrefs: [0x00] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_multiple_xrefs()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x04, 0x08])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: [0x08])
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    memory_entry_3 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: nil)
+    @memory_block.insert(entry: memory_entry_3, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { entry: memory_entry_1, xrefs: [] },
+      { entry: memory_entry_2, xrefs: [0x00] },
+      { entry: memory_entry_3, xrefs: [0x00, 0x04] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_self_ref()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x00])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: [0x04])
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { entry: memory_entry_1, xrefs: [0x00] },
+      { entry: memory_entry_2, xrefs: [0x04] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_delete_ref()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x04, 0x08])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: [0x08])
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    memory_entry_3 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: nil)
+    @memory_block.insert(entry: memory_entry_3, revision: 1)
+
+    @memory_block.delete(entry: memory_entry_1, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        address: address,
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { address: 0x00, entry: nil,            xrefs: [] },
+      { address: 0x01, entry: nil,            xrefs: [] },
+      { address: 0x02, entry: nil,            xrefs: [] },
+      { address: 0x03, entry: nil,            xrefs: [] },
+      { address: 0x04, entry: memory_entry_2, xrefs: [] },
+      { address: 0x08, entry: memory_entry_3, xrefs: [0x04] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_ref_to_nil()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x04, 0x08])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: [0x08])
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    memory_entry_3 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: nil)
+    @memory_block.insert(entry: memory_entry_3, revision: 1)
+
+    @memory_block.delete(entry: memory_entry_3, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        address: address,
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { address: 0x00, entry: memory_entry_1, xrefs: [] },
+      { address: 0x04, entry: memory_entry_2, xrefs: [0x00] },
+      { address: 0x08, entry: nil,            xrefs: [0x00, 0x04] },
+      { address: 0x09, entry: nil,            xrefs: [] },
+      { address: 0x0a, entry: nil,            xrefs: [] },
+      { address: 0x0b, entry: nil,            xrefs: [] },
+    ]
+    assert_equal(expected, entries)
+  end
+
+  def test_ref_to_nil_that_was_middle()
+    memory_entry_1 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0000, length: 0x0004, data: "data", refs: [0x04, 0x09])
+    @memory_block.insert(entry: memory_entry_1, revision: 1)
+
+    memory_entry_2 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0004, length: 0x0004, data: "data", refs: [0x0a])
+    @memory_block.insert(entry: memory_entry_2, revision: 1)
+
+    memory_entry_3 = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: [0x0b])
+    @memory_block.insert(entry: memory_entry_3, revision: 1)
+
+    @memory_block.delete(entry: memory_entry_3, revision: 1)
+
+    entries = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, entry, raw, xrefs|
+      entries << {
+        address: address,
+        entry: entry,
+        xrefs: xrefs,
+      }
+    end
+    expected = [
+      { address: 0x00, entry: memory_entry_1, xrefs: [] },
+      { address: 0x04, entry: memory_entry_2, xrefs: [0x00] },
+      { address: 0x08, entry: nil,            xrefs: [] },
+      { address: 0x09, entry: nil,            xrefs: [0x00] },
+      { address: 0x0a, entry: nil,            xrefs: [0x04] },
+      { address: 0x0b, entry: nil,            xrefs: [] },
+    ]
+    assert_equal(expected, entries)
   end
 end

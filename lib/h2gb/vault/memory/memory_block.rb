@@ -74,6 +74,11 @@ module H2gb
           end
         end
 
+        def edit(entry:, data:, revision:)
+          entry.data = data
+          @memory[entry.address][:revision] = revision
+        end
+
         def _get_raw(entry:)
           return @raw[entry.address, entry.length].bytes()
         end
@@ -121,6 +126,14 @@ module H2gb
               i += 1
             end
           end
+        end
+
+        def get(address:)
+          if @memory[address].nil?
+            return nil
+          end
+
+          return @memory[address][:entry]
         end
 
         def to_s()

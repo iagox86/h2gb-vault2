@@ -19,8 +19,13 @@ require 'h2gb/vault/memory/memory_transaction'
 module H2gb
   module Vault
     class Memory
+      attr_reader :transactions
+
       ENTRY_INSERT = :insert
       ENTRY_DELETE = :delete
+
+      ENTRY_EDIT_FORWARD = :edit_forward
+      ENTRY_EDIT_BACKWARD = :edit_backward
 
       public
       def initialize(raw:)
@@ -28,6 +33,9 @@ module H2gb
         @transactions = MemoryTransaction.new(opposites: {
           ENTRY_INSERT => ENTRY_DELETE,
           ENTRY_DELETE => ENTRY_INSERT,
+
+          ENTRY_EDIT_FORWARD => ENTRY_EDIT_BACKWARD,
+          ENTRY_EDIT_BACKWARD => ENTRY_EDIT_FORWARD,
         })
         @in_transaction = false
 
@@ -44,12 +52,6 @@ module H2gb
 
           @in_transaction = false
         end
-      end
-
-      private
-      def _delete_internal(entry:)
-        @transactions.add_to_current_transaction(type: ENTRY_DELETE, entry: entry)
-        @memory_block.delete(entry: entry, revision: @transactions.revision)
       end
 
       private
@@ -75,6 +77,12 @@ module H2gb
         _insert_internal(entry: entry)
       end
 
+      private
+      def _delete_internal(entry:)
+        @transactions.add_to_current_transaction(type: ENTRY_DELETE, entry: entry)
+        @memory_block.delete(entry: entry, revision: @transactions.revision)
+      end
+
       public
       def delete(address:, length:)
         if not @in_transaction
@@ -86,6 +94,30 @@ module H2gb
             _delete_internal(entry: this_entry)
           end
         end
+      end
+
+      private
+      def _edit_internal(entry:, old_data:, new_data:)
+        @transactions.add_to_current_transaction(type: ENTRY_EDIT_FORWARD, entry: {
+          entry: entry,
+          old_data: entry.data,
+          new_data: new_data,
+        })
+        @memory_block.edit(entry: entry, data: new_data, revision: @transactions.revision)
+      end
+
+      public
+      def edit(address:, new_data:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to edit() must be wrapped in a transaction!")
+        end
+
+        entry = @memory_block.get(address: address)
+        if entry.nil? || entry.data.nil?
+          raise(MemoryError, "Tried to edit undefined data")
+        end
+
+        _edit_internal(entry: entry, old_data: entry.data, new_data: new_data)
       end
 
       public
@@ -129,8 +161,12 @@ module H2gb
           _insert_internal(entry: entry)
         elsif action == ENTRY_DELETE
           _delete_internal(entry: entry)
+        elsif action == ENTRY_EDIT_BACKWARD
+          _edit_internal(entry: entry[:entry], new_data: entry[:old_data], old_data: entry[:new_data])
+        elsif action == ENTRY_EDIT_FORWARD
+          _edit_internal(entry: entry[:entry], new_data: entry[:new_data], old_data: entry[:old_data])
         else
-          raise(MemoryError, "Unknown revision action: %d" % action)
+          raise(MemoryError, "Unknown revision action: %s" % action)
         end
       end
 

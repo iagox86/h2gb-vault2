@@ -181,4 +181,24 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
    assert_equal([0x0000, 0x0001, 0x0002, 0x0003], entries)
   end
 
+  def test_get_nothing()
+    assert_nil(@memory_block.get(address: 0x0000))
+    assert_nil(@memory_block.get(address: 0xFFFF))
+  end
+
+  def test_get_adjacent()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: [])
+    @memory_block.insert(entry: memory_entry, revision: 1)
+
+    assert_nil(@memory_block.get(address: 0x0007))
+    assert_nil(@memory_block.get(address: 0x000c))
+  end
+
+  def test_get_entry()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(address: 0x0008, length: 0x0004, data: "data", refs: [])
+    @memory_block.insert(entry: memory_entry, revision: 1)
+
+    assert_equal(memory_entry, @memory_block.get(address: 0x0008))
+    assert_equal(memory_entry, @memory_block.get(address: 0x000b))
+  end
 end

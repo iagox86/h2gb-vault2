@@ -15,7 +15,8 @@ module H2gb
   module Vault
     class Memory
       class MemoryEntry
-        attr_reader :address, :length, :data, :refs
+        attr_reader :address, :length, :refs
+        attr_accessor :data
 
         def initialize(address:, length:, data:, refs:)
           if length < 0

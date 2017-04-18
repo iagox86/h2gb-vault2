@@ -864,6 +864,81 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     }
     assert_equal(expected, result)
   end
+
+  def test_repeat_undo_redo()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x02)
+    end
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "B", length: 0x02)
+    end
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x04,
+      entries: [
+        { address: 0x00, data: "B", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x05,
+      entries: [
+        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x06,
+      entries: [
+        { address: 0x00, data: "B", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x07,
+      entries: [
+        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x08,
+      entries: [
+        { address: 0x00, data: "B", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
+      ],
+    }
+    assert_equal(expected, result)
+  end
 end
 
 class H2gb::Vault::RedoTest < Test::Unit::TestCase
@@ -2203,5 +2278,137 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory.load("Not valid YAML")
     end
+  end
+end
+
+class H2gb::Vault::EditTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+  def test_edit()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    end
+
+    @memory.transaction() do
+      @memory.edit(address: 0x00, new_data: "B")
+    end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x2,
+      entries: [
+        { address: 0x00, data: "B", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.transaction() do
+      @memory.edit(address: 0x02, new_data: "C")
+    end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x3,
+      entries: [
+        { address: 0x00, data: "C", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_edit_undo_redo()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    end
+
+    @memory.transaction() do
+      @memory.edit(address: 0x00, new_data: "B")
+    end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x2,
+      entries: [
+        { address: 0x00, data: "B", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x3,
+      entries: [
+        { address: 0x00, data: "A", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x4,
+      entries: [
+        { address: 0x00, data: "B", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x5,
+      entries: [
+        { address: 0x00, data: "A", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x6,
+      entries: [
+        { address: 0x00, data: "B", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_edit_bad_memory()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    end
+
+    assert_raises(H2gb::Vault::Memory::MemoryError) do
+      @memory.transaction() do
+        @memory.edit(address: 0x08, new_data: "B")
+      end
+    end
+  end
+
+  def test_edit_and_since()
+    @memory.transaction() do
+      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    end
+
+    @memory.transaction() do
+      @memory.edit(address: 0x02, new_data: "B")
+    end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 1)
+    expected = {
+      revision: 0x2,
+      entries: [
+        { address: 0x00, data: "B", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
+      ]
+    }
+    assert_equal(expected, result)
   end
 end

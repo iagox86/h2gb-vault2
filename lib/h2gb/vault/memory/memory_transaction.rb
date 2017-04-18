@@ -17,7 +17,6 @@ module H2gb
           @opposites = opposites
 
           @revision = 0
-          @undo_revision = 0
           @redo_buffer = []
           @revisions = []
         end
@@ -30,7 +29,6 @@ module H2gb
           }
 
           if kill_redo_buffer
-            @undo_revision = @revision
             @redo_buffer = []
           end
         end
@@ -38,32 +36,36 @@ module H2gb
         def add_to_current_transaction(type:, entry:)
           @revisions[@revision][:entries] << {
             type: type,
-            entry:  entry,
+            entry: entry,
           }
         end
 
         def undo_transaction()
           # Go back until we find the first undoable revision
-          @undo_revision.step(0, -1) do |revision|
+          undo_revision = 0
+          @revision.step(0, -1) do |revision|
             if revision == 0
-              @undo_revision = 0
               return
             end
 
             if @revisions[revision][:undoable]
-              @undo_revision = revision
+              undo_revision = revision
               break
             end
+          end
+
+          if undo_revision == 0
+            return
           end
 
           # Create a new entry in the revisions list
           increment(undoable: false, kill_redo_buffer: false)
 
           # Mark the revision as no longer undoable (since we can't undo an undo)
-          @revisions[@undo_revision][:undoable] = false
+          @revisions[undo_revision][:undoable] = false
 
-          # Go through the current @undo_revision backwards, and unapply each one
-          @revisions[@undo_revision][:entries].reverse().each do |forward_entry|
+          # Go through the current undo_revision backwards, and unapply each one
+          @revisions[undo_revision][:entries].reverse().each do |forward_entry|
             type = @opposites[forward_entry[:type]]
             if type.nil?
               raise(MemoryError, "Unknown revision type: %s" % forward_entry[:type])
@@ -73,7 +75,7 @@ module H2gb
           end
 
           # Add the entry to the redo buffer
-          @redo_buffer << @revisions[@undo_revision]
+          @redo_buffer << @revisions[undo_revision]
         end
 
         def redo_transaction()
@@ -96,6 +98,21 @@ module H2gb
 
         def _test_get_transaction(revision:)
           return @revisions[revision]
+        end
+
+        def to_s()
+          out = []
+          out << "Undo buffer:"
+          @revisions.each_with_index do |value, key|
+            out << " %d: %s" % [key, value]
+          end
+          out << ""
+          out << "Redo buffer:"
+          @redo_buffer.each_with_index do |value, key|
+            out << " %d: %s" % [key, value]
+          end
+
+          return out
         end
       end
     end

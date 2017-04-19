@@ -29,21 +29,14 @@ numbers, do mutex locking, etc.
 
 If you use this library, you get a few "freebies"! Specifically:
 * Automatic undo and redo support
- - All Actions (insert/delete/edit/etc) are tracked in an undo buffer, and can
-   be reversed using a typical undo/redo scheme.
- - The code for the undo support is in
-   [memory_transaction.rb](memory_transaction.rb). The implementation is fairly
-   generic, but I'd be curious to hear others' takes on it; I've never written
-   or researched the right way to do undo/redo before!
+  * All Actions (insert/delete/edit/etc) are tracked in an undo buffer, and can be reversed using a typical undo/redo scheme.
+  * The code for the undo support is in [memory_transaction.rb](memory_transaction.rb). The implementation is fairly generic, but I'd be curious to hear others' takes on it; I've never written or researched the right way to do undo/redo before!
 * Automatic cross-references!
- - Cross references are updated each time a reference is added and removed
+  * Cross references are updated each time a reference is added and removed
 * Versioning support!
- - Every entry and change is versioned, and the get() function has support for
-   getting only changes since a particular revision
- - For a bigger codebase, this could be helpful to avoid re-reading an entire
-   binary every time
- - Right now the support isn't SUPER efficient - it's `O(n)`, which might be
-   an issue for bigger files - but it can be improved if needed
+  * Every entry and change is versioned, and the get() function has support for getting only changes since a particular revision
+  * For a bigger codebase, this could be helpful to avoid re-reading an entire binary every time
+  * Right now the support isn't SUPER efficient - it's `O(n)`, which might be an issue for bigger files - but it can be improved if needed
 * Easy save/load support!
- - Can be persisted with typical ruby functions, like `YAML::dump()` and
+  * Can be persisted with typical ruby functions, like `YAML::dump()` and
    `YAML::load()`

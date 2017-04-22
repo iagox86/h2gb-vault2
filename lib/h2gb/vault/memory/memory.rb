@@ -155,6 +155,11 @@ module H2gb
         end
       end
 
+      public
+      def get_raw()
+        return @memory_block.raw
+      end
+
       private
       def _apply(action:, entry:)
         if action == ENTRY_INSERT

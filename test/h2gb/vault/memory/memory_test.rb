@@ -2412,3 +2412,14 @@ class H2gb::Vault::EditTest < Test::Unit::TestCase
     assert_equal(expected, result)
   end
 end
+
+class H2gb::Vault::EditTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+  def test_get_raw()
+    raw = @memory.get_raw()
+    assert_equal(RAW, raw)
+  end
+end

@@ -12,6 +12,8 @@ module H2gb
   module Vault
     class Memory
       class MemoryBlock
+        attr_reader :raw
+
         def initialize(raw:, revision:0)
           @raw = raw
           @memory = {}

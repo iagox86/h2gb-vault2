@@ -81,12 +81,13 @@ module H2gb
             value: data_offset,
           })
 
+          # Raw pixels
           pixels = raw[data_offset..-1]
           0.step(pixels.length - 1, 3) do |pixel_offset|
             pixel = pixels[pixel_offset, 3]
 
             @memory.insert(address: data_offset + pixel_offset, length: 3, data: {
-              type: :rgb,
+              type: :bgr,
               value: pixel,
             })
           end

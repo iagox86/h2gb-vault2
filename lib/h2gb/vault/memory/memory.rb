@@ -121,7 +121,7 @@ module H2gb
       end
 
       public
-      def get(address:, length:, since: -1)
+      def get(address:, length: 1, since: -1)
         @mutex.synchronize() do
           result = {
             revision: @transactions.revision,

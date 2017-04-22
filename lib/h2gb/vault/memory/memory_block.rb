@@ -44,6 +44,11 @@ module H2gb
 
           # Create cross-references for the entry's references
           entry.refs.each do |ref|
+            # TODO: Write a test for this
+            if @memory[ref].nil?
+              next
+            end
+
             @xrefs[ref] = @xrefs[ref] || []
             @xrefs[ref] << entry.address
 

@@ -33,6 +33,5 @@ end
 
 get '/api/memory' do
   data = memory.get_all()
-  #return YAML::dump(data)
-  return data.to_json()
+  return JSON.pretty_generate(data)
 end

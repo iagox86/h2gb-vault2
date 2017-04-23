@@ -144,7 +144,24 @@ module H2gb
         end
 
         def to_s()
-          return (@memory.map() { |m, e| e.to_s() }).join("\n")
+          result = []
+          each_entry_in_range(address: 0, length: @raw.length, since: -1) do |address, entry, raw, xrefs|
+            if entry && entry.data && entry.data[:comment]
+              result << "0x%04x    %-16s %s ; %s" % [
+                address,
+                (raw.map() { |i| "%02x" % i }).join(" "),
+                entry.to_s,
+                entry.data[:comment],
+              ]
+            else
+              result << "0x%04x    %-16s %s" % [
+                address,
+                (raw.map() { |i| "%02x" % i }).join(" "),
+                entry.to_s,
+              ]
+            end
+          end
+          return result.join("\n")
         end
       end
     end

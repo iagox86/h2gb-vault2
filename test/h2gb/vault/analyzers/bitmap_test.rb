@@ -104,37 +104,80 @@ class H2gb::Vault::RealBmpTest < Test::Unit::TestCase
     }
     assert_equal(expected, offset_entry)
 
+    dib_length = @memory.get(address: 0x0e)
+    expected = {
+      revision: 0x01,
+      entries: [{
+        address: 0x0e,
+        data: { type: :uint32_t, value: 0x6c, comment: "DIB structure length (BITMAPV4HEADER)" },
+        length: 4,
+        refs: [],
+        raw: [0x6c, 0x00, 0x00, 0x00],
+        xrefs: []
+      }],
+    }
+    assert_equal(expected, dib_length)
+
+    width = @memory.get(address: 0x12)
+    expected = {
+      revision: 0x01,
+      entries: [{
+        address: 0x12,
+        data: { type: :uint32_t, value: 0x04, comment: "Image width" },
+        length: 4,
+        refs: [],
+        raw: [0x04, 0x00, 0x00, 0x00],
+        xrefs: []
+      }],
+    }
+    assert_equal(expected, width)
+
+    height = @memory.get(address: 0x16)
+    expected = {
+      revision: 0x01,
+      entries: [{
+        address: 0x16,
+        data: { type: :uint32_t, value: 0x04, comment: "Image height" },
+        length: 4,
+        refs: [],
+        raw: [0x04, 0x00, 0x00, 0x00],
+        xrefs: []
+      }],
+    }
+    assert_equal(expected, height)
+
     pixels = @memory.get(address: 0x7a, length: 0x30)
     expected = {
       revision: 1,
       entries: [
         # Row 4
-        { address: 0x7a, data: { type: :bgr, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: [0x0a]},
-        { address: 0x7d, data: { type: :bgr, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
-        { address: 0x80, data: { type: :bgr, value: "\xFF\x00\x00", }, length: 3, refs: [], raw: [0xFF, 0x00, 0x00], xrefs: []},
-        { address: 0x83, data: { type: :bgr, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
+        { address: 0x7a, data: { type: :rgb, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: [0x0a]},
+        { address: 0x7d, data: { type: :rgb, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
+        { address: 0x80, data: { type: :rgb, value: "\x00\x00\xFF", }, length: 3, refs: [], raw: [0xFF, 0x00, 0x00], xrefs: []},
+        { address: 0x83, data: { type: :rgb, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
 
         # Row 3
-        { address: 0x86, data: { type: :bgr, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
-        { address: 0x89, data: { type: :bgr, value: "\x00\xFF\x00", }, length: 3, refs: [], raw: [0x00, 0xFF, 0x00], xrefs: []},
-        { address: 0x8c, data: { type: :bgr, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-        { address: 0x8f, data: { type: :bgr, value: "\x00\x00\xFF", }, length: 3, refs: [], raw: [0x00, 0x00, 0xFf], xrefs: []},
+        { address: 0x86, data: { type: :rgb, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
+        { address: 0x89, data: { type: :rgb, value: "\x00\xFF\x00", }, length: 3, refs: [], raw: [0x00, 0xFF, 0x00], xrefs: []},
+        { address: 0x8c, data: { type: :rgb, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
+        { address: 0x8f, data: { type: :rgb, value: "\xFF\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0xFf], xrefs: []},
 
         # Row 2
-        { address: 0x92, data: { type: :bgr, value: "\x00\x00\xFF", }, length: 3, refs: [], raw: [0x00, 0x00, 0xFF], xrefs: []},
-        { address: 0x95, data: { type: :bgr, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-        { address: 0x98, data: { type: :bgr, value: "\x00\xFF\x00", }, length: 3, refs: [], raw: [0x00, 0xFF, 0x00], xrefs: []},
-        { address: 0x9b, data: { type: :bgr, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
+        { address: 0x92, data: { type: :rgb, value: "\xFF\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0xFF], xrefs: []},
+        { address: 0x95, data: { type: :rgb, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
+        { address: 0x98, data: { type: :rgb, value: "\x00\xFF\x00", }, length: 3, refs: [], raw: [0x00, 0xFF, 0x00], xrefs: []},
+        { address: 0x9b, data: { type: :rgb, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
 
         # Row 1
-        { address: 0x9e, data: { type: :bgr, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-        { address: 0xa1, data: { type: :bgr, value: "\xFF\x00\x00", }, length: 3, refs: [], raw: [0xFF, 0x00, 0x00], xrefs: []},
-        { address: 0xa4, data: { type: :bgr, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
-        { address: 0xa7, data: { type: :bgr, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
+        { address: 0x9e, data: { type: :rgb, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
+        { address: 0xa1, data: { type: :rgb, value: "\x00\x00\xFF", }, length: 3, refs: [], raw: [0xFF, 0x00, 0x00], xrefs: []},
+        { address: 0xa4, data: { type: :rgb, value: "\x00\x00\x00", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
+        { address: 0xa7, data: { type: :rgb, value: "\xFF\xFF\xFF", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
       ]
     }
 
     assert_equal(expected, pixels)
+    puts(@memory)
   end
 end
 

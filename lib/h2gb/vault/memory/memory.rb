@@ -195,9 +195,11 @@ module H2gb
 
       public
       def to_s()
-        @mutex.synchronize() do
-          return "Revision: %d => %s" % [@transactions.revision, @memory_block]
-        end
+        return [
+          "Revision: %d" % @transactions.revision,
+          "--",
+          "%s" % [@memory_block.to_s()],
+        ].join("\n")
       end
 
       public

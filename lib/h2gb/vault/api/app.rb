@@ -11,6 +11,7 @@
 require 'base64'
 require 'json'
 require 'sinatra'
+require 'sinatra/cross_origin'
 
 $LOAD_PATH.unshift File.expand_path('../../../../', __FILE__)
 
@@ -51,6 +52,7 @@ end
 
 before do
   content_type('application/vnd.api+json')
+  headers('Access-Control-Allow-Origin' => '*')
 end
 
 before(accepted_verbs: ['POST', 'PUT']) do
@@ -79,7 +81,7 @@ get('/') do
   return "Welcome to the h2gb-vault API! The requests are /api/*, you'll probably want to read the documentation :)"
 end
 
-get('/api/memory') do
+get('/api/memories') do
   data = memory.get_all()
 
   return {
@@ -88,5 +90,17 @@ get('/api/memory') do
       id: '1',
       attributes: data,
     }]
+  }
+end
+
+get('/api/memories/1') do
+  data = memory.get_all()
+
+  return {
+    data: {
+      type: 'memory',
+      id: '1',
+      attributes: data,
+    }
   }
 end

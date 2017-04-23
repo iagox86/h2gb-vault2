@@ -39,8 +39,30 @@ module H2gb
           end
         end
 
+        def value_to_s(value:, type:, subtype:)
+          if type == :uint8_t
+            return "0x%02x" % value
+          elsif type == :uint16_t
+            return "0x%04x" % value
+          elsif type == :uint32_t
+            return "0x%08x" % value
+          elsif type == :offset
+            return "0x%08x" % value
+          elsif type == :rgb
+            return "#" + value.bytes.map() { |b| '%02x' % b }.join()
+          elsif type == :array
+            return value.map() { value_to_s(value: value, type: subtype, subtype: nil) }
+          else
+            return "Unknown type: %s" % type
+          end
+        end
+
         def to_s()
-          return "%p :: 0x%x bytes => %s" % [@address, @length, @data]
+          if @data
+            return value_to_s(value: @data[:value], type: @data[:type], subtype: @data[:subtype])
+          else
+            return "n/a"
+          end
         end
       end
     end

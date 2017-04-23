@@ -146,7 +146,7 @@ module H2gb
             @memory.insert(address: 0x3e, length: 4, data: { type: :uint32_t, value: blue_bitmask, comment: "Blue bitmask" })
             @memory.insert(address: 0x42, length: 4, data: { type: :uint32_t, value: alpha_bitmask, comment: "Alpha bitmask" })
             @memory.insert(address: 0x46, length: 4, data: { type: :uint32_t, value: windows_color_space, comment: "Windows color space" })
-            @memory.insert(address: 0x4a, length: 0x24, data: { type: :array, subtype: :uint8_t, value: color_space_endpoints, comment: "Color space endpoints" })
+            @memory.insert(address: 0x4a, length: 0x24, data: { type: :array, subtype: :uint8_t, value: color_space_endpoints.bytes(), comment: "Color space endpoints" })
             @memory.insert(address: 0x6e, length: 4, data: { type: :uint32_t, value: red_gamma, comment: "Red gamma" })
             @memory.insert(address: 0x72, length: 4, data: { type: :uint32_t, value: green_gamma, comment: "Green gamma" })
             @memory.insert(address: 0x76, length: 4, data: { type: :uint32_t, value: blue_gamma, comment: "Blue gamma" })

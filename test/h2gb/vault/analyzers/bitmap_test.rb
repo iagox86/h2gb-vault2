@@ -177,7 +177,6 @@ class H2gb::Vault::RealBmpTest < Test::Unit::TestCase
     }
 
     assert_equal(expected, pixels)
-    puts(@memory)
   end
 end
 

@@ -168,7 +168,7 @@ module H2gb
 
               @memory.insert(address: data_offset + pixel_offset, length: 3, data: {
                 type: :rgb,
-                value: pixel,
+                value: pixel.unpack("H*").join(),
               })
             end
           end

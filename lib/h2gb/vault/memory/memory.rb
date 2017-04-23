@@ -156,6 +156,11 @@ module H2gb
       end
 
       public
+      def get_all()
+        return get(address: 0, length: @memory_block.raw.length, since: -1)
+      end
+
+      public
       def get_raw()
         return @memory_block.raw
       end

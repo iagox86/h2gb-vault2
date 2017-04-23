@@ -49,9 +49,8 @@ configure() do
   end
 end
 
-
 before do
-  content_type(:json)
+  content_type('application/vnd.api+json')
 end
 
 before(accepted_verbs: ['POST', 'PUT']) do
@@ -70,26 +69,24 @@ after('/api/*') do
   response.body = JSON.pretty_generate(response.body)
 end
 
-not_found() do
-  status(404)
-  return {
-    status: 404,
-    message: "Not found"
-  }
-end
-
 options("*") do
   response.headers["Allow"] = "HEAD,GET,PUT,POST,DELETE,OPTIONS"
   response.headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Cache-Control, Accept, Authorization"
   status(200)
 end
 
-get '/' do
+get('/') do
   return "Welcome to the h2gb-vault API! The requests are /api/*, you'll probably want to read the documentation :)"
 end
 
-get '/api/memory' do
+get('/api/memory') do
   data = memory.get_all()
-  return data
-end
 
+  return {
+    data: [{
+      type: 'memory',
+      id: '1',
+      attributes: data,
+    }]
+  }
+end

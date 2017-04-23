@@ -17,6 +17,16 @@ configure() do
   set(:show_exceptions, false)
 end
 
+not_found() do
+  status(404)
+  return {
+    errors: [{
+      status: 404,
+      title: "Not found",
+    }]
+  }
+end
+
 class ExceptionHandling
   def initialize(app)
     @app = app
@@ -26,12 +36,15 @@ class ExceptionHandling
     begin
       return @app.call(env)
     rescue Exception => e
-      response = JSON.pretty_generate({
-        message: e.to_s(),
-        backtrace: e.backtrace(),
-      })
+      response = {
+        errors: [{
+          status: 500,
+          title: e.to_s,
+          detail: e.backtrace,
+        }]
+      }
 
-      [500, {'Content-Type' => 'application/json'}, [response]]
+      [500, {'Content-Type' => 'application/vnd.api+json'}, [JSON.pretty_generate(response)]]
     end
   end
 end

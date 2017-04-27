@@ -59,7 +59,7 @@ before(accepted_verbs: ['POST', 'PUT']) do
   begin
     @params = JSON.parse(request.body.read)
   rescue Exception => e # TODO: Use the right exception
-    halt(400, output("Invalid JSON: " + e.to_s()))
+    halt(400, puts("Invalid JSON: " + e.to_s() + " :: " + request.body.read))
   end
 end
 
@@ -102,5 +102,41 @@ get('/api/memories/1') do
       id: '1',
       attributes: data,
     }
+  }
+end
+
+post('/api/edit_memory/1') do
+  puts(@params)
+  memory.transaction() do
+    memory.insert(
+      address: @params['address'],
+      length: @params['length'],
+      data: {
+        type: @params['type'],
+        value: @params['value'],
+        comment: @params['comment'],
+      },
+      refs: @params['refs'],
+    )
+  end
+
+  return {
+    'status': 200
+  }
+end
+
+post('/api/undo/1') do
+  memory.undo()
+
+  return {
+    'status': 200
+  }
+end
+
+post('/api/redo/1') do
+  memory.redo()
+
+  return {
+    'status': 200
   }
 end

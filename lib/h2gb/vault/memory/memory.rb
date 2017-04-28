@@ -73,6 +73,28 @@ module H2gb
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
         end
 
+        # TODO: Test the input validation
+        if !address.is_a?(Fixnum)
+          raise(MemoryError, "Address must be an integer!")
+        end
+
+        if !length.is_a?(Fixnum)
+          raise(MemoryError, "Length must be an integer!")
+        end
+
+        if refs
+          if !refs.is_a?(Array)
+            raise(MemoryError, "Refs must be an array (or nil)!")
+          end
+
+          refs.each do |ref|
+            if !ref.is_a?(Fixnum)
+              raise(MemoryError, "Each ref must be an integer!")
+            end
+          end
+        end
+
+
         entry = MemoryEntry.new(address: address, length: length, data: data, refs: refs)
         _insert_internal(entry: entry)
       end

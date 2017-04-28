@@ -245,6 +245,30 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
 
     assert_equal(expected, result)
   end
+
+  def test_insert_invalid_refs_string()
+    assert_raises(H2gb::Vault::Memory::MemoryError) do
+      @memory.transaction() do
+        @memory.insert(address: 0x00, data: "A", length: 0x02, refs: 'hi')
+      end
+    end
+  end
+
+  def test_insert_invalid_refs_array_string()
+    assert_raises(H2gb::Vault::Memory::MemoryError) do
+      @memory.transaction() do
+        @memory.insert(address: 0x00, data: "A", length: 0x02, refs: ['hi'])
+      end
+    end
+  end
+
+  def test_insert_invalid_refs_nil()
+    assert_raises(H2gb::Vault::Memory::MemoryError) do
+      @memory.transaction() do
+        @memory.insert(address: 0x00, data: "A", length: 0x02, refs: [nil])
+      end
+    end
+  end
 end
 
 ##

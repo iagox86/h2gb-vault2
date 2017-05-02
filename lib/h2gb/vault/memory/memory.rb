@@ -19,7 +19,7 @@ require 'h2gb/vault/memory/memory_transaction'
 module H2gb
   module Vault
     class Memory
-      attr_reader :transactions
+      attr_reader :transactions, :memory_block
 
       ENTRY_INSERT = :insert
       ENTRY_DELETE = :delete

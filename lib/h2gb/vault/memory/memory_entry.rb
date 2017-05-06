@@ -67,8 +67,17 @@ module H2gb
           @length = length
           @code_refs = code_refs
           @data_refs = data_refs
-          @user_defined = user_defined
           @comment = comment
+
+          # Use the helper function for this
+          self.user_defined = user_defined
+        end
+
+        def user_defined=(new_user_defined)
+          if !new_user_defined.is_a?(Hash)
+            raise(MemoryError, "user_defined must be a hash!")
+          end
+          @user_defined = new_user_defined
         end
 
         def each_address()
@@ -99,6 +108,18 @@ module H2gb
           else
             return "n/a"
           end
+        end
+
+        def ==(other)
+          return (
+            @address == other.address &&
+            @type == other.type &&
+            @value == other.value &&
+            @length == other.length &&
+            @code_refs == other.code_refs &&
+            @data_refs == other.data_refs &&
+            @user_defined == other.user_defined
+          )
         end
       end
     end

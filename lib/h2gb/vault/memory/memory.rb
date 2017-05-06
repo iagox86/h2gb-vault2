@@ -21,21 +21,21 @@ module H2gb
     class Memory
       attr_reader :transactions, :memory_block
 
-      ENTRY_INSERT = :insert
-      ENTRY_DELETE = :delete
+      ENTRY_DEFINE = :define
+      ENTRY_UNDEFINE = :undefine
 
-      ENTRY_EDIT_FORWARD = :edit_forward
-      ENTRY_EDIT_BACKWARD = :edit_backward
+      UPDATE_USER_DEFINED_FORWARD = :update_user_defined_forward
+      UPDATE_USER_DEFINED_BACKWARD = :update_user_defined_backward
 
       public
       def initialize(raw:)
         @memory_block = MemoryBlock.new(raw: raw)
         @transactions = MemoryTransaction.new(opposites: {
-          ENTRY_INSERT => ENTRY_DELETE,
-          ENTRY_DELETE => ENTRY_INSERT,
+          ENTRY_DEFINE => ENTRY_UNDEFINE,
+          ENTRY_UNDEFINE => ENTRY_DEFINE,
 
-          ENTRY_EDIT_FORWARD => ENTRY_EDIT_BACKWARD,
-          ENTRY_EDIT_BACKWARD => ENTRY_EDIT_FORWARD,
+          UPDATE_USER_DEFINED_FORWARD => UPDATE_USER_DEFINED_BACKWARD,
+          UPDATE_USER_DEFINED_BACKWARD => UPDATE_USER_DEFINED_FORWARD,
         })
         @in_transaction = false
 
@@ -55,16 +55,47 @@ module H2gb
       end
 
       private
-      def _insert_internal(entry:)
+      def _define_internal(entry:)
         @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |this_address, this_entry, raw, xrefs|
           if this_entry
-            _delete_internal(entry: this_entry)
+            _undefine_internal(entry: this_entry)
           end
         end
 
         @memory_block.insert(entry: entry, revision: @transactions.revision)
 
-        @transactions.add_to_current_transaction(type: ENTRY_INSERT, entry: entry)
+        @transactions.add_to_current_transaction(type: ENTRY_DEFINE, entry: entry)
+      end
+
+      private
+      def _undefine_internal(entry:)
+        @transactions.add_to_current_transaction(type: ENTRY_UNDEFINE, entry: entry)
+        @memory_block.delete(entry: entry, revision: @transactions.revision)
+      end
+
+      private
+      def _update_user_defined_internal(entry:, new_user_defined:)
+        @transactions.add_to_current_transaction(type: UPDATE_USER_DEFINED_FORWARD, entry: {
+          entry: entry,
+          old_data: entry.old_user_defined.clone(),
+          new_data: new_user_defined.clone(),
+        })
+        entry.user_defined = new_user_defined()
+      end
+
+      private
+      def _apply(action:, entry:)
+        if action == ENTRY_DEFINE
+          _define_internal(entry: entry)
+        elsif action == ENTRY_UNDEFINE
+          _undefine_internal(entry: entry)
+        elsif action == UPDATE_USER_DEFINED_BACKWARD
+          _update_user_defined_internal(entry: entry[:entry], new_data: entry[:old_data], old_data: entry[:new_data])
+        elsif action == UPDATE_USER_DEFINED_FORWARD
+          _update_user_defined_internal(entry: entry[:entry], new_data: entry[:new_data], old_data: entry[:old_data])
+        else
+          raise(MemoryError, "Unknown revision action: %s" % action)
+        end
       end
 
       public
@@ -74,94 +105,63 @@ module H2gb
         end
 
         entry = MemoryEntry.new(address: address, type: type, value: value, length: length, code_refs: code_refs, data_refs: data_refs, user_defined: user_defined, comment: comment)
-        _insert_internal(entry: entry)
+        _define_internal(entry: entry)
       end
 
       public
       def undefine(address:, length:1)
+        if not @in_transaction
+          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
+        end
+
+        @memory_block.each_entry_in_range(address: address, length: length) do |entry|
+          _undefine_internal(entry: entry)
+        end
       end
 
       public
       def get_user_defined(address:)
-      end
-
-      public
-      def set_user_defined(address:, user_defined:)
-      end
-
-      public
-      def insert(address:, length:, data:, refs: nil)
         if not @in_transaction
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
-        end
-
-        # TODO: Test the input validation
-        if !address.is_a?(Fixnum)
-          raise(MemoryError, "Address must be an integer!")
-        end
-
-        if !length.is_a?(Fixnum)
-          raise(MemoryError, "Length must be an integer!")
-        end
-
-        if refs
-          if !refs.is_a?(Array)
-            raise(MemoryError, "Refs must be an array (or nil)!")
-          end
-
-          refs.each do |ref|
-            if !ref.is_a?(Fixnum)
-              raise(MemoryError, "Each ref must be an integer!")
-            end
-          end
-        end
-
-
-        entry = MemoryEntry.new(address: address, length: length, data: data, refs: refs)
-        _insert_internal(entry: entry)
-      end
-
-      private
-      def _delete_internal(entry:)
-        @transactions.add_to_current_transaction(type: ENTRY_DELETE, entry: entry)
-        @memory_block.delete(entry: entry, revision: @transactions.revision)
-      end
-
-      public
-      def delete(address:, length:)
-        if not @in_transaction
-          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
-        end
-
-        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, this_entry, raw, xrefs|
-          if this_entry
-            _delete_internal(entry: this_entry)
-          end
-        end
-      end
-
-      private
-      def _edit_internal(entry:, old_data:, new_data:)
-        @transactions.add_to_current_transaction(type: ENTRY_EDIT_FORWARD, entry: {
-          entry: entry,
-          old_data: entry.data,
-          new_data: new_data,
-        })
-        @memory_block.edit(entry: entry, data: new_data, revision: @transactions.revision)
-      end
-
-      public
-      def edit(address:, new_data:)
-        if not @in_transaction
-          raise(MemoryError, "Calls to edit() must be wrapped in a transaction!")
         end
 
         entry = @memory_block.get(address: address)
-        if entry.nil? || entry.data.nil?
-          raise(MemoryError, "Tried to edit undefined data")
+        if entry.nil?
+          return {}
         end
 
-        _edit_internal(entry: entry, old_data: entry.data, new_data: new_data)
+        return entry.user_defined
+      end
+
+      public
+      def replace_user_defined(address:, user_defined:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
+        end
+
+        entry = @memory_block.get(address: address)
+        if entry.nil?
+          raise(MemoryError, "Setting user-defined for undefined address is not implemented (yet?)")
+        end
+
+        _update_user_defined_internal(entry: entry, new_user_defined: user_defined)
+      end
+
+      public
+      def update_user_defined(address:, user_defined:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
+        end
+        if !user_defined.is_a?(Hash)
+          raise(MemoryError, "user_defined must be a hash")
+        end
+
+        entry = @memory_block.get(address: address)
+        if entry.nil?
+          raise(MemoryError, "Not implemented (yet?)")
+        end
+
+        _update_user_defined_internal(entry: entry, new_user_defined: entry.user_defined.merge(user_defined))
       end
 
       public
@@ -205,23 +205,8 @@ module H2gb
       end
 
       public
-      def get_raw()
+      def raw()
         return @memory_block.raw
-      end
-
-      private
-      def _apply(action:, entry:)
-        if action == ENTRY_INSERT
-          _insert_internal(entry: entry)
-        elsif action == ENTRY_DELETE
-          _delete_internal(entry: entry)
-        elsif action == ENTRY_EDIT_BACKWARD
-          _edit_internal(entry: entry[:entry], new_data: entry[:old_data], old_data: entry[:new_data])
-        elsif action == ENTRY_EDIT_FORWARD
-          _edit_internal(entry: entry[:entry], new_data: entry[:new_data], old_data: entry[:old_data])
-        else
-          raise(MemoryError, "Unknown revision action: %s" % action)
-        end
       end
 
       public

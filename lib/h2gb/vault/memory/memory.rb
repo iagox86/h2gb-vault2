@@ -68,6 +68,28 @@ module H2gb
       end
 
       public
+      def define(address:, type:, value:, length:, code_refs:, data_refs:, user_defined:, comment:)
+        if not @in_transaction
+          raise(MemoryError, "Must be wrapped in a transaction!")
+        end
+
+        entry = MemoryEntry.new(address: address, type: type, value: value, length: length, code_refs: code_refs, data_refs: data_refs, user_defined: user_defined, comment: comment)
+        _insert_internal(entry: entry)
+      end
+
+      public
+      def undefine(address:, length:1)
+      end
+
+      public
+      def get_user_defined(address:)
+      end
+
+      public
+      def set_user_defined(address:, user_defined:)
+      end
+
+      public
       def insert(address:, length:, data:, refs: nil)
         if not @in_transaction
           raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")

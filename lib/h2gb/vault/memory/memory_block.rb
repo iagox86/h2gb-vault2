@@ -34,7 +34,7 @@ module H2gb
           xrefs = {}
           refs.each do |ref|
             if @memory[ref].nil?
-              next
+              raise(MemoryError, "Reference to an invalid address!")
             end
 
             xrefs[ref] = xrefs[ref] || []
@@ -60,10 +60,24 @@ module H2gb
         def insert(entry:, revision:)
           _check_revision(revision: revision)
 
+          # Verify all addresses before actually creating any entries
           entry.each_address() do |i|
-            if @memory[i][:entry]
-              raise(MemoryError, "Tried to write to memory that's already in use")
+            if @memory[i].nil?
+              raise(MemoryError, "Tried to define an entry that's out of range")
             end
+          end
+          entry.code_refs.each() do |i|
+            if @memory[i].nil?
+              raise(MemoryError, "Tried to define an invalid code_ref")
+            end
+          end
+          entry.data_refs.each() do |i|
+            if @memory[i].nil?
+              raise(MemoryError, "Tried to define an invalid data_ref")
+            end
+          end
+
+          entry.each_address() do |i|
             if @raw[i].nil?
               raise(MemoryError, "Tried to create an entry outside of the memory range")
             end

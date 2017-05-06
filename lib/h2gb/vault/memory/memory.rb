@@ -56,7 +56,7 @@ module H2gb
 
       private
       def _define_internal(entry:)
-        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |this_address, this_entry, raw, xrefs|
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |this_address, this_entry, raw, code_xrefs, data_xrefs|
           if this_entry
             _undefine_internal(entry: this_entry)
           end
@@ -101,7 +101,7 @@ module H2gb
       public
       def define(address:, type:, value:, length:, code_refs:, data_refs:, user_defined:, comment:)
         if not @in_transaction
-          raise(MemoryError, "Must be wrapped in a transaction!")
+          raise(MemoryError, "Calls to define() must be wrapped in a transaction!")
         end
 
         entry = MemoryEntry.new(address: address, type: type, value: value, length: length, code_refs: code_refs, data_refs: data_refs, user_defined: user_defined, comment: comment)
@@ -111,20 +111,16 @@ module H2gb
       public
       def undefine(address:, length:1)
         if not @in_transaction
-          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
+          raise(MemoryError, "Calls to undefine() must be wrapped in a transaction!")
         end
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |entry|
+        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw, code_xrefs, data_xrefs|
           _undefine_internal(entry: entry)
         end
       end
 
       public
       def get_user_defined(address:)
-        if not @in_transaction
-          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
-        end
-
         entry = @memory_block.get(address: address)
         if entry.nil?
           return {}
@@ -136,7 +132,7 @@ module H2gb
       public
       def replace_user_defined(address:, user_defined:)
         if not @in_transaction
-          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
+          raise(MemoryError, "Calls to replace_user_defined() must be wrapped in a transaction!")
         end
 
         entry = @memory_block.get(address: address)
@@ -150,7 +146,7 @@ module H2gb
       public
       def update_user_defined(address:, user_defined:)
         if not @in_transaction
-          raise(MemoryError, "Calls to insert() must be wrapped in a transaction!")
+          raise(MemoryError, "Calls to update_user_defined() must be wrapped in a transaction!")
         end
         if !user_defined.is_a?(Hash)
           raise(MemoryError, "user_defined must be a hash")
@@ -172,27 +168,20 @@ module H2gb
             entries: [],
           }
 
-          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, xrefs|
-
-            if entry
-              result[:entries] << {
-                address: entry.address,
-                data:    entry.data,
-                length:  entry.length,
-                refs:    entry.refs,
-                raw:     raw,
-                xrefs:   xrefs,
-              }
-            else
-              result[:entries] << {
-                address: this_address,
-                data:    nil,
-                length:  1,
-                refs:    [],
-                raw:     raw,
-                xrefs:   xrefs,
-              }
-            end
+          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, code_xrefs, data_xrefs|
+            result[:entries] << {
+              address:      this_address,
+              type:         entry.type,
+              value:        entry.value,
+              length:       entry.length,
+              code_refs:    entry.code_refs,
+              data_refs:    entry.data_refs,
+              user_defined: entry.user_defined,
+              comment:      entry.comment,
+              raw:          raw,
+              code_xrefs:   code_xrefs,
+              data_xrefs:   data_xrefs,
+            }
           end
 
           return result
@@ -247,7 +236,7 @@ module H2gb
       def self.load(str)
         memory = YAML::load(str)
 
-        if memory.class != H2gb::Vault::Memory
+        if memory.class != Memory
           raise(MemoryError, "Couldn't load the file")
         end
 

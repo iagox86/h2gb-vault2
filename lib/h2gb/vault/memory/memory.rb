@@ -56,10 +56,8 @@ module H2gb
 
       private
       def _define_internal(entry:)
-        @memory_block.each_entry_in_range(address: entry.address, length: entry.length) do |this_address, this_entry, raw, code_xrefs, data_xrefs|
-          if this_entry
-            _undefine_internal(entry: this_entry)
-          end
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw, code_xrefs, data_xrefs|
+          _undefine_internal(entry: this_entry)
         end
 
         @memory_block.insert(entry: entry, revision: @transactions.revision)

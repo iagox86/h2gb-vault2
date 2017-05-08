@@ -30,8 +30,7 @@ module H2gb
         end
 
         private
-        def _set_refs_for(refs:, address:, revision:)
-          xrefs = {}
+        def _set_refs_for(xrefs:, refs:, address:, revision:)
           refs.each do |ref|
             if @memory[ref].nil?
               raise(MemoryError, "Reference to an invalid address!")
@@ -88,8 +87,8 @@ module H2gb
           end
 
           # Create cross-references for the entry's references
-          @code_xrefs = _set_refs_for(refs: entry.code_refs, address: entry.address, revision: revision)
-          @data_xrefs = _set_refs_for(refs: entry.data_refs, address: entry.address, revision: revision)
+          @code_xrefs = _set_refs_for(xrefs: @code_xrefs, refs: entry.code_refs, address: entry.address, revision: revision)
+          @data_xrefs = _set_refs_for(xrefs: @data_xrefs, refs: entry.data_refs, address: entry.address, revision: revision)
         end
 
         def delete(entry:, revision:)

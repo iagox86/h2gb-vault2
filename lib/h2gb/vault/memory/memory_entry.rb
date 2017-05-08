@@ -65,8 +65,8 @@ module H2gb
           @type = type
           @value = value
           @length = length
-          @code_refs = code_refs
-          @data_refs = data_refs
+          @code_refs = code_refs.uniq().sort()
+          @data_refs = data_refs.uniq().sort()
           @comment = comment
 
           # Use the helper function for this

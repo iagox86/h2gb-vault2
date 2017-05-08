@@ -7,7 +7,7 @@ RAW = (0..255).to_a().map() { |b| b.chr() }.join()
 
 def _test_define(memory:, address:, type: :type, value: "value", length:, code_refs: [], data_refs: [], user_defined: { test: 'hi' }, comment: 'bye', do_transaction: true)
   if do_transaction
-    @memory.transaction() do
+    memory.transaction() do
       memory.define(
         address: address,
         type: type,
@@ -832,671 +832,631 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     assert_equal(expected, result)
   end
 
-#  def test_transaction_undo()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x01, data: "C", length: 0x02)
-#      @memory.insert(address: 0x03, data: "D", length: 0x02)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x02,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: "C", length: 0x02, refs: [], raw: [0x01, 0x02], xrefs: [] },
-#        { address: 0x03, data: "D", length: 0x02, refs: [], raw: [0x03, 0x04], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.undo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x03,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_repeat_undo_redo()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "B", length: 0x02)
-#    end
-#
-#    @memory.undo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x03,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x04,
-#      entries: [
-#        { address: 0x00, data: "B", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.undo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x05,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: "B", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.undo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x07,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x08,
-#      entries: [
-#        { address: 0x00, data: "B", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#  end
+  def test_transaction_undo()
+    @memory.transaction() do
+      _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'}, do_transaction: false )
+      _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'}, do_transaction: false )
+    end
+
+    @memory.transaction() do
+      _test_define(memory: @memory, address: 0x0001, length: 0x0002, user_defined: { test: 'C'}, do_transaction: false )
+      _test_define(memory: @memory, address: 0x0003, length: 0x0002, user_defined: { test: 'D'}, do_transaction: false )
+    end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'C'} ),
+        _test_entry(address: 0x0003, length: 0x02, raw: "\x03\x04".bytes(), user_defined: { test: 'D'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
+        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
+        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
+      ]
+    }
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_repeat_undo_redo()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'B'} )
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x04,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x05,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x07,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x08,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+      ],
+    }
+    assert_equal(expected, result)
+  end
 end
 
-#class H2gb::Vault::RedoTest < Test::Unit::TestCase
-#  def setup()
-#    @memory = H2gb::Vault::Memory.new(raw: RAW)
-#  end
-#
-#  def test_basic_redo()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#    end
-#    @memory.undo()
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#
-#    expected = {
-#      revision: 0x04,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
-#      ]
-#    }
-#
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_redo_multiple_steps()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "C", length: 0x02)
-#    end
-#
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.undo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo()
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x07,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo()
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x08,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo()
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x09,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
-#        { address: 0x04, data: "C", length: 0x02, refs: [], raw: [0x04, 0x05], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_redo_then_set()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#    end
-#    @memory.undo()
-#    @memory.redo()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "C", length: 0x02)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#
-#    expected = {
-#      revision: 0x05,
-#      entries: [
-#        { address: 0x00, data: "C", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
-#      ]
-#    }
-#
-#    assert_equal(expected, result)
-#  end
-#
-#  ##
-#  # Attempts to exercise the situation where an undo would inappropriately undo
-#  # another undo.
-#  ##
-#  def test_redo_across_other_undos()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#    end
-#
-#    @memory.undo() # undo B
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x03,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "C", length: 0x02)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x04,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: "C", length: 0x02, refs: [], raw: [0x04, 0x05], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.undo() # undo C
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x05,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.undo() # undo A
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo() # redo A
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x07,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo() # redo C
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x08,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: "C", length: 0x02, refs: [], raw: [0x04, 0x05], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo() # Should do nothing
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x08,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: "C", length: 0x02, refs: [], raw: [0x04, 0x05], xrefs: [] },
-#      ],
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_redo_goes_away_after_edit()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "C", length: 0x02)
-#    end
-#
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.undo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    assert_equal({
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ],
-#    }, result)
-#
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x07,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x06, data: "D", length: 0x02)
-#    end
-#
-#    @memory.redo() # Should do nothing
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x08,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#        { address: 0x06, data: "D", length: 0x02, refs: [], raw: [0x06, 0x07], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_redo_too_much()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.redo()
-#    @memory.redo()
-#    @memory.redo()
-#    @memory.redo()
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#    end
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#
-#    expected = {
-#      revision: 0x04,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
-#      ]
-#    }
-#
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_redo_overwrite()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "B", length: 0x01)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "C", length: 0x03)
-#    end
-#
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.redo()
-#    @memory.redo()
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x09,
-#      entries: [
-#        { address: 0x00, data: "C", length: 0x03, refs: [], raw: [0x00, 0x01, 0x02], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_transaction_redo()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x02)
-#      @memory.insert(address: 0x02, data: "B", length: 0x02)
-#      @memory.insert(address: 0x00, data: "C", length: 0x02)
-#      @memory.insert(address: 0x04, data: "D", length: 0x02)
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x01, data: "E", length: 0x02)
-#      @memory.insert(address: 0x06, data: "F", length: 0x02)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#
-#    @memory.undo()
-#    @memory.undo()
-#
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x05,
-#      entries: [
-#        { address: 0x00, data: "C", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
-#        { address: 0x04, data: "D", length: 0x02, refs: [], raw: [0x04, 0x05], xrefs: [] },
-#        { address: 0x06, data: nil, length: 0x01, refs: [], raw: [0x06], xrefs: [] },
-#        { address: 0x07, data: nil, length: 0x01, refs: [], raw: [0x07], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: "E", length: 0x02, refs: [], raw: [0x01, 0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: "D", length: 0x02, refs: [], raw: [0x04, 0x05], xrefs: [] },
-#        { address: 0x06, data: "F", length: 0x02, refs: [], raw: [0x06, 0x07], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#end
-#
-#class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
-#  def setup()
-#    @memory = H2gb::Vault::Memory.new(raw: RAW)
-#  end
-#
-#
-#  def test_get_from_minus_one()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x01, data: "A", length: 0x02)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0x04, since: -1)
-#    expected = {
-#      revision: 0x1,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: "A", length: 0x02, refs: [], raw: [0x01, 0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#      ]
-#    }
-#
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_add_one()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x01)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 0)
-#    expected = {
-#      revision: 0x1,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#      ]
-#    }
-#
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_add_multiple()
+class H2gb::Vault::RedoTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+  def test_basic_redo()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+    @memory.undo()
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+
+    expected = {
+      revision: 0x04,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_redo_multiple_steps()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+    _test_define(memory: @memory, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+
+    @memory.undo()
+    @memory.undo()
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x07,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x08,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x09,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_redo_then_set()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+    @memory.undo()
+    @memory.redo()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'C'} )
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+
+    expected = {
+      revision: 0x05,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
+        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  ##
+  # Attempts to exercise the situation where an undo would inappropriately undo
+  # another undo.
+  ##
+  def test_redo_across_other_undos()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+
+    @memory.undo() # undo B
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    _test_define(memory: @memory, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x04,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.undo() # undo C
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x05,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.undo() # undo A
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo() # redo A
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x07,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo() # redo C
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x08,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+      ],
+    }
+    assert_equal(expected, result)
+
+    @memory.redo() # Should do nothing
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x08,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+      ],
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_redo_goes_away_after_edit()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+    _test_define(memory: @memory, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+
+    @memory.undo()
+    @memory.undo()
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    assert_equal({
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+      ],
+    }, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x07,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    _test_define(memory: @memory, address: 0x0006, length: 0x0002, user_defined: { test: 'D'} )
+
+    @memory.redo() # Should do nothing
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x08,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        _test_entry(address: 0x0006, length: 0x02, raw: "\x06\x07".bytes(), user_defined: { test: 'D'} ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_redo_too_much()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    @memory.undo()
+    @memory.undo()
+    @memory.redo()
+    @memory.redo()
+    @memory.redo()
+    @memory.redo()
+
+    _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+
+    expected = {
+      revision: 0x04,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_redo_overwrite()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+    _test_define(memory: @memory, address: 0x0000, length: 0x0001, user_defined: { test: 'B'} )
+    _test_define(memory: @memory, address: 0x0000, length: 0x0003, user_defined: { test: 'C'} )
+
+    @memory.undo()
+    @memory.undo()
+    @memory.undo()
+    @memory.redo()
+    @memory.redo()
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x09,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x03, raw: "\x00\x01\x02".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_transaction_redo()
+    @memory.transaction() do
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'}, do_transaction: false)
+    _test_define(memory: @memory, address: 0x0002, length: 0x0002, user_defined: { test: 'B'}, do_transaction: false)
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'C'}, do_transaction: false)
+    _test_define(memory: @memory, address: 0x0004, length: 0x0002, user_defined: { test: 'D'}, do_transaction: false)
+    end
+
+    @memory.transaction() do
+    _test_define(memory: @memory, address: 0x0001, length: 0x0002, user_defined: { test: 'E'}, do_transaction: false)
+    _test_define(memory: @memory, address: 0x0006, length: 0x0002, user_defined: { test: 'F'}, do_transaction: false)
+    end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+
+    @memory.undo()
+    @memory.undo()
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x05,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
+        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'D'} ),
+        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes() ),
+        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes() ),
+      ]
+    }
+    assert_equal(expected, result)
+
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'E'} ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'D'} ),
+        _test_entry(address: 0x0006, length: 0x02, raw: "\x06\x07".bytes(), user_defined: { test: 'F'} ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+end
+
+class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+
+  def test_get_from_minus_one()
+    _test_define(memory: @memory, address: 0x0001, length: 0x0002, user_defined: { test: 'A'})
+
+    result = @memory.get(address: 0x00, length: 0x04, since: -1)
+    expected = {
+      revision: 0x1,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'A'} ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_add_one()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0001, user_defined: { test: 'A'})
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x1,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x01, raw: "\x00".bytes(), user_defined: { test: 'A'} ),
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_add_multiple()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04)
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
 #    end
 #    @memory.transaction() do
 #      @memory.insert(address: 0x04, data: "B", length: 0x04)
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
 #    end
 #    @memory.transaction() do
 #      @memory.insert(address: 0x08, data: "C", length: 0x04)
+    _test_define(memory: @memory, address: 0x0008, length: 0x0004, user_defined: { test: 'C'})
 #    end
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 0)
-#    expected = {
-#      revision: 0x3,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x04, refs: [], raw: [0x00, 0x01, 0x02, 0x03], xrefs: [] },
-#        { address: 0x04, data: "B", length: 0x04, refs: [], raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
-#        { address: 0x08, data: "C", length: 0x04, refs: [], raw: [0x08, 0x09, 0x0a, 0x0b], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 1)
-#    expected = {
-#      revision: 0x3,
-#      entries: [
-#        { address: 0x04, data: "B", length: 0x04, refs: [], raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
-#        { address: 0x08, data: "C", length: 0x04, refs: [], raw: [0x08, 0x09, 0x0a, 0x0b], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 2)
-#    expected = {
-#      revision: 0x3,
-#      entries: [
-#        { address: 0x08, data: "C", length: 0x04, refs: [], raw: [0x08, 0x09, 0x0a, 0x0b], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 3)
-#    expected = {
-#      revision: 0x3,
-#      entries: []
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_overwrite()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x02, data: "B", length: 0x04)
-#    end
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "C", length: 0x04)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 0)
-#    expected = {
-#      revision: 0x3,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: "C", length: 0x04, refs: [], raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 1)
-#    expected = {
-#      revision: 0x3,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: "C", length: 0x04, refs: [], raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 2)
-#    expected = {
-#      revision: 0x3,
-#      entries: [
-#        { address: 0x02, data: nil, length: 0x01, refs: [], raw: [0x02], xrefs: [] },
-#        { address: 0x03, data: nil, length: 0x01, refs: [], raw: [0x03], xrefs: [] },
-#        { address: 0x04, data: "C", length: 0x04, refs: [], raw: [0x04, 0x05, 0x06, 0x07], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 3)
-#    expected = {
-#      revision: 0x3,
-#      entries: []
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_undo()
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x3,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
+        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 1)
+    expected = {
+      revision: 0x3,
+      entries: [
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
+        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 2)
+    expected = {
+      revision: 0x3,
+      entries: [
+        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 3)
+    expected = {
+      revision: 0x3,
+      entries: []
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_overwrite()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+    _test_define(memory: @memory, address: 0x0002, length: 0x0004, user_defined: { test: 'B'})
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'C'})
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x3,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 1)
+    expected = {
+      revision: 0x3,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 2)
+    expected = {
+      revision: 0x3,
+      entries: [
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 3)
+    expected = {
+      revision: 0x3,
+      entries: []
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_undo()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x02)
 #    end
@@ -1506,69 +1466,72 @@ end
 #    @memory.transaction() do
 #      @memory.insert(address: 0x08, data: "C", length: 0x02)
 #    end
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.undo()
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 0)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#        { address: 0x08, data: nil, length: 0x01, refs: [], raw: [0x08], xrefs: [] },
-#        { address: 0x09, data: nil, length: 0x01, refs: [], raw: [0x09], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 3)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#        { address: 0x08, data: nil, length: 0x01, refs: [], raw: [0x08], xrefs: [] },
-#        { address: 0x09, data: nil, length: 0x01, refs: [], raw: [0x09], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 4)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
-#        { address: 0x05, data: nil, length: 0x01, refs: [], raw: [0x05], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 5)
-#    expected = {
-#      revision: 0x06,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 6)
-#    expected = {
-#      revision: 0x06,
-#      entries: [],
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_redo()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0002, user_defined: { test: 'A'})
+    _test_define(memory: @memory, address: 0x0004, length: 0x0002, user_defined: { test: 'B'})
+    _test_define(memory: @memory, address: 0x0008, length: 0x0002, user_defined: { test: 'C'})
+    @memory.undo()
+    @memory.undo()
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes() ),
+        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes() ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 3)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes() ),
+        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes() ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 4)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 5)
+    expected = {
+      revision: 0x06,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 6)
+    expected = {
+      revision: 0x06,
+      entries: [],
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_redo()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04)
 #    end
@@ -1578,228 +1541,201 @@ end
 #    @memory.transaction() do
 #      @memory.insert(address: 0x08, data: "C", length: 0x02)
 #    end
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.undo()
-#    @memory.redo()
-#    @memory.redo()
-#    @memory.redo()
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 0)
-#    expected = {
-#      revision: 0x09,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x04, refs: [], raw: [0x02, 0x03, 0x04, 0x05], xrefs: [] },
-#        { address: 0x08, data: "C", length: 0x02, refs: [], raw: [0x08, 0x09], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 6)
-#    expected = {
-#      revision: 0x09,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x04, refs: [], raw: [0x02, 0x03, 0x04, 0x05], xrefs: [] },
-#        { address: 0x08, data: "C", length: 0x02, refs: [], raw: [0x08, 0x09], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 7)
-#    expected = {
-#      revision: 0x09,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, refs: [], raw: [0x00], xrefs: [] },
-#        { address: 0x01, data: nil, length: 0x01, refs: [], raw: [0x01], xrefs: [] },
-#        { address: 0x02, data: "B", length: 0x04, refs: [], raw: [0x02, 0x03, 0x04, 0x05], xrefs: [] },
-#        { address: 0x08, data: "C", length: 0x02, refs: [], raw: [0x08, 0x09], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#
-#    result = @memory.get(address: 0x00, length: 0x10, since: 8)
-#    expected = {
-#      revision: 0x09,
-#      entries: [
-#        { address: 0x08, data: "C", length: 0x02, refs: [], raw: [0x08, 0x09], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#end
-#
-#class H2gb::Vault::XrefsTest < Test::Unit::TestCase
-#  def setup()
-#    @memory = H2gb::Vault::Memory.new(raw: RAW)
-#  end
-#
-#  def test_basic_xref()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04)
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x00])
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x02,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [], xrefs: [0x04] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x00], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_xref_to_middle()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04)
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x02])
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x02,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [], xrefs: [0x04] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x02], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_multiple_same_refs()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04)
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x00, 0x01, 0x02])
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x02,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [],                 xrefs: [0x04] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x00, 0x01, 0x02], xrefs: [] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_multiple_refs()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x04, 0x08, 0x09])
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [])
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x08, data: "C", length: 0x04, refs: nil)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x03,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [0x04, 0x08, 0x09], xrefs: [] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [],                 xrefs: [0x00] },
-#        { address: 0x08, data: "C", length: 0x04, raw: [0x08, 0x09, 0x0a, 0x0b], refs: [],                 xrefs: [0x00] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_multiple_xrefs()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x04, 0x08, 0x09])
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x0a])
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x08, data: "C", length: 0x04, refs: nil)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x03,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [0x04, 0x08, 0x09], xrefs: [] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x0a],             xrefs: [0x00] },
-#        { address: 0x08, data: "C", length: 0x04, raw: [0x08, 0x09, 0x0a, 0x0b], refs: [],                 xrefs: [0x00, 0x04] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_self_ref()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x00])
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x05])
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x02,
-#      entries: [
-#        { address: 0x00, data: "A", length: 0x04, raw: [0x00, 0x01, 0x02, 0x03], refs: [0x00], xrefs: [0x00] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x05], xrefs: [0x04] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_delete_ref()
-#    @memory.transaction() do
-#      @memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x04, 0x08, 0x09])
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x04, data: "B", length: 0x04, refs: [0x00, 0x02, 0x0a])
-#    end
-#
-#    @memory.transaction() do
-#      @memory.insert(address: 0x08, data: "C", length: 0x04, refs: nil)
-#    end
-#
-#    @memory.transaction() do
-#      @memory.delete(address: 0x00, length: 0x01)
-#    end
-#
-#    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
-#    expected = {
-#      revision: 0x04,
-#      entries: [
-#        { address: 0x00, data: nil, length: 0x01, raw: [0x00],                   refs: [],                 xrefs: [0x04] },
-#        { address: 0x01, data: nil, length: 0x01, raw: [0x01],                   refs: [],                 xrefs: [] },
-#        { address: 0x02, data: nil, length: 0x01, raw: [0x02],                   refs: [],                 xrefs: [0x04] },
-#        { address: 0x03, data: nil, length: 0x01, raw: [0x03],                   refs: [],                 xrefs: [] },
-#        { address: 0x04, data: "B", length: 0x04, raw: [0x04, 0x05, 0x06, 0x07], refs: [0x00, 0x02, 0x0a], xrefs: [] },
-#        { address: 0x08, data: "C", length: 0x04, raw: [0x08, 0x09, 0x0a, 0x0b], refs: [],                 xrefs: [0x04] },
-#      ]
-#    }
-#    assert_equal(expected, result)
-#  end
-#
-#  def test_xref_after_undos_and_redos()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+    _test_define(memory: @memory, address: 0x0002, length: 0x0004, user_defined: { test: 'B'})
+    _test_define(memory: @memory, address: 0x0008, length: 0x0002, user_defined: { test: 'C'})
+    @memory.undo()
+    @memory.undo()
+    @memory.undo()
+    @memory.redo()
+    @memory.redo()
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 0)
+    expected = {
+      revision: 0x09,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
+        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 6)
+    expected = {
+      revision: 0x09,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
+        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 7)
+    expected = {
+      revision: 0x09,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
+        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+
+    result = @memory.get(address: 0x00, length: 0x10, since: 8)
+    expected = {
+      revision: 0x09,
+      entries: [
+        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+end
+
+class H2gb::Vault::XrefsTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+  def test_basic_xref()
+   _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+   _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0000])
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, code_xrefs: [0x0004] ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, code_refs: [0x0000] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  # We just have one simple test, because as far as memory.rb is concerned, code and data xrefs are identical
+  def test_basic_data_xref()
+   _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+   _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, data_refs: [0x0000])
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, data_xrefs: [0x0004] ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, data_refs: [0x0000] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_xref_to_middle()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0002])
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, code_refs: [0x0002] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_multiple_same_refs()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0000, 0x0000, 0x0002])
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, code_xrefs: [0x0004] ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, code_refs: [0x0000, 0x0002] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_multiple_refs()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, code_refs: [0x0004, 0x0008, 0x0009])
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [])
+    _test_define(memory: @memory, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, code_refs: [])
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, code_refs: [0x0004, 0x0008, 0x0009] ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, code_xrefs: [0x0000] ),
+        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, code_xrefs: [0x0000] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_multiple_xrefs()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, code_refs: [0x0004, 0x0008, 0x0009])
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0008])
+    _test_define(memory: @memory, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, code_refs: [])
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, code_refs: [0x0004, 0x0008, 0x0009] ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, code_refs: [0x0008], code_xrefs: [0x0000] ),
+        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, code_xrefs: [0x000, 0x0004] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_self_ref()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, code_refs: [0x0000])
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0005])
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, code_refs: [0x0000], code_xrefs: [0x0000] ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, code_refs: [0x0005], code_xrefs: [] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_delete_ref()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, code_refs: [0x0004, 0x0008, 0x0009])
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0000, 0x0002, 0x000a])
+    _test_define(memory: @memory, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, code_refs: [])
+
+    _test_undefine(memory: @memory, address: 0x0000, length: 0x01)
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x04,
+      entries: [
+        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), code_xrefs: [0x0004] ),
+        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes(), code_xrefs: [0x0002] ),
+        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, code_refs: [0x0000, 0x0002, 0x000a] ),
+        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, code_refs: [] ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_xref_after_undos_and_redos()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x04, 0x08, 0x09])
 #    end
@@ -1811,6 +1747,9 @@ end
 #    @memory.transaction() do
 #      @memory.insert(address: 0x08, data: "C", length: 0x04, refs: [0x07])
 #    end
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, code_refs: [0x0004, 0x0008, 0x0009])
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0000, 0x0002, 0x000a])
+    _test_define(memory: @memory, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, code_refs: [])
 #
 #    @memory.transaction() do
 #      @memory.delete(address: 0x00, length: 0x01)
@@ -1963,9 +1902,9 @@ end
 #      ]
 #    }
 #    assert_equal(expected, result)
-#  end
-#
-#  def test_xref_with_since()
+  end
+
+  def test_xref_with_since()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x04, 0x05])
 #    end
@@ -1975,6 +1914,9 @@ end
 #    @memory.transaction() do
 #      @memory.insert(address: 0x05, data: "C", length: 0x04, refs: [0x05, 0x0a])
 #    end
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, code_refs: [0x0004, 0x0005])
+    _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0004])
+    _test_define(memory: @memory, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, code_refs: [0x0005, 0x000a])
 #
 #    result = @memory.get(address: 0x00, length: 0x10, since: 0)
 #    expected = {
@@ -2099,12 +2041,12 @@ end
 #      ]
 #    }
 #    assert_equal(expected, result)
-#  end
-#end
-#
-#class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
-#  def test_save_load()
-#    memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+end
+
+class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
+  def test_save_load()
+    memory = H2gb::Vault::Memory.new(raw: RAW)
 #
 #    memory.transaction() do
 #      memory.insert(address: 0x00, data: "A", length: 0x04, refs: [0x04, 0x05])
@@ -2115,6 +2057,9 @@ end
 #    memory.transaction() do
 #      memory.insert(address: 0x05, data: "C", length: 0x04, refs: [0x05, 0x0a])
 #    end
+    _test_define(memory: memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, code_refs: [0x0004, 0x0005])
+    _test_define(memory: memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, code_refs: [0x0004])
+    _test_define(memory: memory, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, code_refs: [0x0005, 0x000a])
 #
 #    # Save/load throughout this function to make sure it's working right
 #    memory = H2gb::Vault::Memory.load(memory.dump())
@@ -2275,24 +2220,25 @@ end
 #      ]
 #    }
 #    assert_equal(expected, result)
-#  end
-#
-#  def test_bad_load()
+  end
+
+  def test_bad_load()
 #    assert_raises(H2gb::Vault::Memory::MemoryError) do
 #      H2gb::Vault::Memory.load("Not valid YAML")
 #    end
-#  end
-#end
-#
-#class H2gb::Vault::EditTest < Test::Unit::TestCase
-#  def setup()
-#    @memory = H2gb::Vault::Memory.new(raw: RAW)
-#  end
-#
-#  def test_edit()
+  end
+end
+
+class H2gb::Vault::EditTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+  def test_edit()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04)
 #    end
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
 #
 #    @memory.transaction() do
 #      @memory.edit(address: 0x00, new_data: "B")
@@ -2319,12 +2265,13 @@ end
 #      ]
 #    }
 #    assert_equal(expected, result)
-#  end
-#
-#  def test_edit_undo_redo()
+  end
+
+  def test_edit_undo_redo()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04)
 #    end
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
 #
 #    @memory.transaction() do
 #      @memory.edit(address: 0x00, new_data: "B")
@@ -2382,24 +2329,26 @@ end
 #      ]
 #    }
 #    assert_equal(expected, result)
-#  end
-#
-#  def test_edit_bad_memory()
+  end
+
+  def test_edit_bad_memory()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04)
 #    end
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
 #
 #    assert_raises(H2gb::Vault::Memory::MemoryError) do
 #      @memory.transaction() do
 #        @memory.edit(address: 0x08, new_data: "B")
 #      end
 #    end
-#  end
-#
-#  def test_edit_and_since()
+  end
+
+  def test_edit_and_since()
 #    @memory.transaction() do
 #      @memory.insert(address: 0x00, data: "A", length: 0x04)
 #    end
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
 #
 #    @memory.transaction() do
 #      @memory.edit(address: 0x02, new_data: "B")
@@ -2413,17 +2362,17 @@ end
 #      ]
 #    }
 #    assert_equal(expected, result)
-#  end
-#end
+  end
+end
 #
-#class H2gb::Vault::EditTest < Test::Unit::TestCase
-#  def setup()
-#    @memory = H2gb::Vault::Memory.new(raw: RAW)
-#  end
-#
-#  def test_get_raw()
+class H2gb::Vault::EditTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+  def test_get_raw()
 #    raw = @memory.get_raw()
 #    assert_equal(RAW, raw)
-#  end
-#end
+  end
+end
 # TODO: Test get_user_defined and update_user_defined

@@ -15,10 +15,10 @@ module H2gb
   module Vault
     class Memory
       class MemoryEntry
-        attr_reader :address, :type, :value, :length, :code_refs, :data_refs, :user_defined, :comment
+        attr_reader :address, :type, :value, :length, :refs, :user_defined, :comment
 
-        def initialize(address:, type:, value:, length:, code_refs:, data_refs:, user_defined:, comment:)
-          if !address.is_a?(Fixnum)
+        def initialize(address:, type:, value:, length:, refs:, user_defined:, comment:)
+          if !address.is_a?(Integer)
             raise(MemoryError, "address must be an integer!")
           end
           if address < 0
@@ -32,29 +32,15 @@ module H2gb
             raise(MemoryError, "type must be a string or symbol!")
           end
 
-          if !length.is_a?(Fixnum)
+          if !length.is_a?(Integer)
             raise(MemoryError, "length must be an integer!")
           end
           if length < 1
             raise(MemoryError, "length must be at least zero!")
           end
 
-          if !code_refs.is_a?(Array)
-            raise(MemoryError, "code_refs must be an array!")
-          end
-          code_refs.each do |ref|
-            if !ref.is_a?(Fixnum)
-              raise(MemoryError, "Each code_ref must be an integer!")
-            end
-          end
-
-          if !data_refs.is_a?(Array)
-            raise(MemoryError, "data_refs must be an array!")
-          end
-          data_refs.each do |ref|
-            if !ref.is_a?(Fixnum)
-              raise(MemoryError, "Each data_ref must be an integer!")
-            end
+          if !refs.is_a?(Hash)
+            raise(MemoryError, "refs must be a hash!")
           end
 
           if !user_defined.is_a?(Hash)
@@ -65,9 +51,8 @@ module H2gb
           @type = type
           @value = value
           @length = length
-          @code_refs = code_refs.uniq().sort()
-          @data_refs = data_refs.uniq().sort()
           @comment = comment
+          @refs = refs
 
           # Use the helper function for this
           self.user_defined = user_defined
@@ -116,8 +101,7 @@ module H2gb
             @type == other.type &&
             @value == other.value &&
             @length == other.length &&
-            @code_refs == other.code_refs &&
-            @data_refs == other.data_refs &&
+            @refs == other.refs &&
             @user_defined == other.user_defined
           )
         end

@@ -70,7 +70,7 @@ module H2gb
         def delete(address:)
           memory_ref = @refs.delete(address)
           if memory_ref.nil?
-            raise(MemoryError, "Trying to delete non-existant reference")
+            return []
           end
 
           memory_ref.refs.each do |ref|

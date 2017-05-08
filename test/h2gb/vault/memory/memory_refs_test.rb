@@ -9,7 +9,8 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
   end
 
   def test_insert()
-    @memory_refs.insert(address: 0x0000, refs: [0x0004])
+    updates = @memory_refs.insert(address: 0x0000, refs: [0x0004])
+    assert_equal([0x0004], updates)
 
     refs = @memory_refs.get_refs(address: 0x0000)
     assert_equal([0x0004], refs)
@@ -40,7 +41,8 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
 
   def test_multiple_refs()
     # Note: These are out of order to ensure that they get sorted
-    @memory_refs.insert(address: 0x0000, refs: [0x0002, 0x0001, 0x0003])
+    updates = @memory_refs.insert(address: 0x0000, refs: [0x0002, 0x0001, 0x0003])
+    assert_equal([0x0001, 0x0002, 0x0003], updates)
 
     refs = @memory_refs.get_refs(address: 0x0000)
     assert_equal([0x0001, 0x0002, 0x0003], refs)
@@ -114,7 +116,8 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
 
   def test_delete()
     @memory_refs.insert(address: 0x0000, refs: [0x0004])
-    @memory_refs.delete(address: 0x0000)
+    updates = @memory_refs.delete(address: 0x0000)
+    assert_equal([0x0004], updates)
 
     refs = @memory_refs.get_refs(address: 0x0000)
     assert_equal([], refs)
@@ -125,7 +128,8 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
 
   def test_delete_when_there_are_multiple_refs()
     @memory_refs.insert(address: 0x0000, refs: [0x0004, 0x0005])
-    @memory_refs.delete(address: 0x0000)
+    updates = @memory_refs.delete(address: 0x0000)
+    assert_equal([0x0004, 0x0005], updates)
 
     refs = @memory_refs.get_refs(address: 0x0000)
     assert_equal([], refs)
@@ -161,8 +165,6 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
   end
 
   def test_delete_missing()
-    assert_raises(H2gb::Vault::Memory::MemoryError) do
-      @memory_refs.delete(address: 0x0000)
-    end
+    @memory_refs.delete(address: 0x0000)
   end
 end

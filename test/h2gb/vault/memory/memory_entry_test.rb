@@ -9,8 +9,7 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 10,
-      code_refs: [123],
-      data_refs: [321],
+      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )
@@ -19,8 +18,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
     assert_equal(:type, memory_entry.type)
     assert_equal("value", memory_entry.value)
     assert_equal(10, memory_entry.length)
-    assert_equal([123], memory_entry.code_refs)
-    assert_equal([321], memory_entry.data_refs)
     assert_equal({test: "hi"}, memory_entry.user_defined)
     assert_equal("bye", memory_entry.comment)
   end
@@ -29,61 +26,37 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 'hi', type: :type, value: "value", length: 10,
-        code_refs: [123], data_refs: [321], user_defined: {test: "hi"}, comment: "bye",
+        refs: {}, user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: -1, type: :type, value: "value", length: 10,
-        code_refs: [123], data_refs: [321], user_defined: {test: "hi"}, comment: "bye",
+        refs: {}, user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: [], value: "value", length: 10,
-        code_refs: [123], data_refs: [321], user_defined: {test: "hi"}, comment: "bye",
+        refs: {}, user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: :type, value: "value", length: "hi",
-        code_refs: [123], data_refs: [321], user_defined: {test: "hi"}, comment: "bye",
+        refs: {}, user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: :type, value: "value", length: 0,
-        code_refs: [123], data_refs: [321], user_defined: {test: "hi"}, comment: "bye",
+        refs: {}, user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: :type, value: "value", length: 10,
-        code_refs: "hi", data_refs: [321], user_defined: {test: "hi"}, comment: "bye",
-      )
-    end
-    assert_raises(H2gb::Vault::Memory::MemoryError) do
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x1234, type: :type, value: "value", length: 10,
-        code_refs: ["hi"], data_refs: [321], user_defined: {test: "hi"}, comment: "bye",
-      )
-    end
-    assert_raises(H2gb::Vault::Memory::MemoryError) do
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x1234, type: :type, value: "value", length: 10,
-        code_refs: [123], data_refs: "hi", user_defined: {test: "hi"}, comment: "bye",
-      )
-    end
-    assert_raises(H2gb::Vault::Memory::MemoryError) do
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x1234, type: :type, value: "value", length: 10,
-        code_refs: [123], data_refs: ["hi"], user_defined: {test: "hi"}, comment: "bye",
-      )
-    end
-    assert_raises(H2gb::Vault::Memory::MemoryError) do
-      H2gb::Vault::Memory::MemoryEntry.new(
-        address: 0x1234, type: :type, value: "value", length: 10,
-        code_refs: [123], data_refs: [321], user_defined: "hi", comment: "bye",
+        refs: {}, user_defined: "hi", comment: "bye",
       )
     end
   end
@@ -94,8 +67,7 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 1,
-      code_refs: [123],
-      data_refs: [321],
+      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )
@@ -114,8 +86,7 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 1,
-      code_refs: [123],
-      data_refs: [321],
+      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )
@@ -135,8 +106,7 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 0x0004,
-      code_refs: [123],
-      data_refs: [321],
+      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )

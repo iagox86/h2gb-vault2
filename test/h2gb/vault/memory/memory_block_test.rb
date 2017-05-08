@@ -10,14 +10,13 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     @memory_block = H2gb::Vault::Memory::MemoryBlock.new(raw: raw)
   end
 
-  def _test_entry(address: 0x0000, type: :type, value: "value", length: 0x0001, code_refs: [], data_refs: [], user_defined: { test: 'hi' }, comment: 'bye')
+  def _test_entry(address: 0x0000, type: :type, value: "value", length: 0x0001, refs: {}, user_defined: { test: 'hi' }, comment: 'bye')
     return H2gb::Vault::Memory::MemoryEntry.new(
       address: address,
       type: type,
       value: value,
       length: length,
-      code_refs: code_refs,
-      data_refs: data_refs,
+      refs: refs,
       user_defined: user_defined,
       comment: comment,
     )
@@ -29,15 +28,14 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       type: :uint8_t,
       value: value,
       length: 1,
-      code_refs: [],
-      data_refs: [],
+      refs: {},
       user_defined: {},
       comment: nil,
     )
   end
 
   def test_empty()
-    @memory_block.each_entry_in_range(address: 0x00, length: 0xFF) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x00, length: 0xFF) do |address, this_entry, raw, xrefs|
       assert_true(false)
     end
   end
@@ -49,27 +47,21 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     addresses = []
     entries = []
     raws = []
-    code_xrefses = []
-    data_xrefses = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0001) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0001) do |address, this_entry, raw, xrefs|
       addresses << address
       entries << entry
       raws << raw
-      code_xrefses << code_xrefs
-      data_xrefses << data_xrefs
     end
     assert_equal([0x00], addresses)
     assert_equal([entry], entries)
     assert_equal([[0x00]], raws)
-    assert_equal([[]], code_xrefses)
-    assert_equal([[]], data_xrefses)
   end
 
   def test_each_entry_no_entries_in_range()
     entry = _test_entry(address: 0x0000, length: 0x0001)
     @memory_block.insert(entry: entry, revision: 1)
 
-    @memory_block.each_entry_in_range(address: 0x0002, length: 0x0004) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0002, length: 0x0004) do |address, this_entry, raw, xrefs|
       assert_true(false)
     end
   end
@@ -79,7 +71,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     @memory_block.insert(entry: entry, revision: 1)
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
-      @memory_block.each_entry_in_range(address: 0x00F8, length: 0x0009) do |address, this_entry, raw, code_xrefs, data_xrefs|
+      @memory_block.each_entry_in_range(address: 0x00F8, length: 0x0009) do |address, this_entry, raw, xrefs|
         assert_true(false)
       end
     end
@@ -92,21 +84,15 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     addresses = []
     entries = []
     raws = []
-    code_xrefses = []
-    data_xrefses = []
 
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, this_entry, raw, xrefs|
       addresses << address
       entries << entry
       raws << raw
-      code_xrefses << code_xrefs
-      data_xrefses << data_xrefs
     end
     assert_equal([0x80], addresses)
     assert_equal([entry], entries)
     assert_equal([[0x80]], raws)
-    assert_equal([[]], code_xrefses)
-    assert_equal([[]], data_xrefses)
   end
 
   def test_multiple_bytes()
@@ -121,7 +107,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     end
 
     test_entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, this_entry, raw, xrefs|
       test_entries << this_entry
     end
     assert_equal(entries, test_entries)
@@ -146,7 +132,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     @memory_block.delete(entry: entry, revision: 1)
 
     results = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF) do |address, this_entry, raw, xrefs|
       results << {
         address: address,
         this_entry: this_entry,
@@ -177,7 +163,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     end
 
     test_entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0100) do |address, this_entry, raw, xrefs|
       test_entries << this_entry
     end
     expected = [
@@ -249,7 +235,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     @memory_block.insert(entry: entry_2, revision: 2)
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, this_entry, raw, xrefs|
       entries << this_entry
     end
     assert_equal([entry_2], entries)
@@ -261,7 +247,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     @memory_block.delete(entry: entry_1, revision: 2)
 
     entries = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, this_entry, raw, code_xrefs, data_xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0010, since: 1) do |address, this_entry, raw, xrefs|
       entries << this_entry
     end
     expected = [
@@ -273,118 +259,8 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     assert_equal(expected, entries)
   end
 
-  def test_add_refs()
-    entry = _test_entry(address: 0x0080, length: 0x0004, code_refs: [0x00], data_refs: [0x80, 0xF0])
-    @memory_block.insert(entry: entry, revision: 1)
-
-    results = []
-    @memory_block.each_entry do |address, this_entry, raw, code_xrefs, data_xrefs|
-      results << {
-        address: address,
-        entry: this_entry,
-        code_xrefs: code_xrefs,
-        data_xrefs: data_xrefs,
-      }
-    end
-
-    expected = [
-      {
-        address: 0x00,
-        entry: _deleted_entry(address: 0x0000, value: 0x00),
-        code_xrefs: [0x0080],
-        data_xrefs: [],
-      },
-      {
-        address: 0x80,
-        entry: entry,
-        code_xrefs: [],
-        data_xrefs: [0x0080],
-      },
-      {
-        address: 0xF0,
-        entry: _deleted_entry(address: 0x00F0, value: 0xF0),
-        code_xrefs: [],
-        data_xrefs: [0x0080],
-      },
-    ]
-
-    assert_equal(expected, results)
-  end
-
-  def test_ref_to_inside_an_entry()
-    entry = _test_entry(address: 0x0080, length: 0x0004, code_refs: [0x82])
-    @memory_block.insert(entry: entry, revision: 1)
-
-    results = []
-    @memory_block.each_entry do |address, this_entry, raw, code_xrefs, data_xrefs|
-      results << {
-        address: address,
-        entry: this_entry,
-        code_xrefs: code_xrefs,
-        data_xrefs: data_xrefs,
-      }
-    end
-
-    expected = [
-      {
-        address: 0x80,
-        entry: entry,
-        code_xrefs: [],
-        data_xrefs: [],
-      },
-    ]
-
-    assert_equal(expected, results)
-  end
-
-  def test_delete_refs()
-    entry = _test_entry(address: 0x0080, length: 0x0002, code_refs: [0x00], data_refs: [0x80, 0xF0])
-    @memory_block.insert(entry: entry, revision: 1)
-    @memory_block.delete(entry: entry, revision: 1)
-
-    results = []
-    @memory_block.each_entry do |address, this_entry, raw, code_xrefs, data_xrefs|
-      results << {
-        address: address,
-        entry: this_entry,
-        code_xrefs: code_xrefs,
-        data_xrefs: data_xrefs,
-      }
-    end
-
-    expected = [
-      {
-        address: 0x00,
-        entry: _deleted_entry(address: 0x0000, value: 0x00),
-        code_xrefs: [],
-        data_xrefs: [],
-      },
-      {
-        address: 0x80,
-        entry: _deleted_entry(address: 0x0080, value: 0x80),
-        code_xrefs: [],
-        data_xrefs: [],
-      },
-      {
-        address: 0x81,
-        entry: _deleted_entry(address: 0x0081, value: 0x81),
-        code_xrefs: [],
-        data_xrefs: [],
-      },
-      {
-        address: 0xF0,
-        entry: _deleted_entry(address: 0x00F0, value: 0xF0),
-        code_xrefs: [],
-        data_xrefs: [],
-      },
-    ]
-
-    assert_equal(expected, results)
-  end
-
-
   def test_revision_going_down()
-    entry = _test_entry(address: 0x0080, length: 0x0002, code_refs: [0x00], data_refs: [0x80, 0xF0])
+    entry = _test_entry(address: 0x0080, length: 0x0002)
     @memory_block.insert(entry: entry, revision: 3)
 
     assert_raises(H2gb::Vault::Memory::MemoryError) do
@@ -395,4 +271,197 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     end
   end
 
+  def test_refs_and_xrefs()
+    entry1 = _test_entry(address: 0x0000, length: 0x0002, refs: { code: [0x0004], data: [0x0008] })
+    @memory_block.insert(entry: entry1, revision: 1)
+
+    entry2 = _test_entry(address: 0x0004, length: 0x0002, refs: {})
+    @memory_block.insert(entry: entry2, revision: 1)
+
+    entry3 = _test_entry(address: 0x0008, length: 0x0002)
+    @memory_block.insert(entry: entry3, revision: 1)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      results << {
+        entry: this_entry,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { entry: entry1, xrefs: {} },
+      { entry: entry2, xrefs: {code: [0x0000]} },
+      { entry: entry3, xrefs: {data: [0x0000]} },
+    ]
+    assert_equal(expected, results)
+  end
+
+  def test_xrefs_update_revision()
+    entry1 = _test_entry(address: 0x0000, length: 0x0002)
+    @memory_block.insert(entry: entry1, revision: 1)
+
+    entry3 = _test_entry(address: 0x0008, length: 0x0002)
+    @memory_block.insert(entry: entry3, revision: 1)
+
+    entry2 = _test_entry(address: 0x0004, length: 0x0002, refs: {code: [0x0000]})
+    @memory_block.insert(entry: entry2, revision: 2) # <-- Note the different revision
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 1) do |address, this_entry, raw, xrefs|
+      results << {
+        entry: this_entry,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { entry: entry1, xrefs: {code: [0x0004]} },
+      { entry: entry2, xrefs: {} },
+    ]
+    assert_equal(expected, results)
+  end
+
+  def test_ref_to_middle_of_entry()
+    entry1 = _test_entry(address: 0x0000, length: 0x0002, refs: { code: [0x0005] })
+    @memory_block.insert(entry: entry1, revision: 1)
+
+    entry2 = _test_entry(address: 0x0004, length: 0x0002, refs: {})
+    @memory_block.insert(entry: entry2, revision: 1)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      results << {
+        entry: this_entry,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { entry: entry1, xrefs: {} },
+      { entry: entry2, xrefs: {} },
+    ]
+    assert_equal(expected, results)
+  end
+
+  def test_delete_refs()
+    entry1 = _test_entry(address: 0x0000, length: 0x0002, refs: { code: [0x0004], data: [0x0008] })
+    @memory_block.insert(entry: entry1, revision: 1)
+
+    entry2 = _test_entry(address: 0x0004, length: 0x0002, refs: {})
+    @memory_block.insert(entry: entry2, revision: 1)
+
+    entry3 = _test_entry(address: 0x0008, length: 0x0002)
+    @memory_block.insert(entry: entry3, revision: 1)
+
+    @memory_block.delete(entry: entry1, revision: 2)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      results << {
+        entry: this_entry,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { entry: _deleted_entry(address: 0, value: 0), xrefs: {} },
+      { entry: _deleted_entry(address: 1, value: 1), xrefs: {} },
+      { entry: entry2, xrefs: {} },
+      { entry: entry3, xrefs: {} },
+    ]
+    assert_equal(expected, results)
+  end
+
+  def test_delete_xref_while_other_refs_remain()
+    entry1 = _test_entry(address: 0x0000, length: 0x0002, refs: { data: [0x0008] })
+    @memory_block.insert(entry: entry1, revision: 1)
+
+    entry2 = _test_entry(address: 0x0004, length: 0x0002, refs: { data: [0x0008]})
+    @memory_block.insert(entry: entry2, revision: 1)
+
+    entry3 = _test_entry(address: 0x0008, length: 0x0002)
+    @memory_block.insert(entry: entry3, revision: 1)
+
+    @memory_block.delete(entry: entry1, revision: 2)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      results << {
+        entry: this_entry,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { entry: _deleted_entry(address: 0, value: 0), xrefs: {} },
+      { entry: _deleted_entry(address: 1, value: 1), xrefs: {} },
+      { entry: entry2, xrefs: {} },
+      { entry: entry3, xrefs: {data: [0x0004]} },
+    ]
+    assert_equal(expected, results)
+  end
+
+  def test_delete_refs_revision_updated()
+  end
+
+  def test_delete_ref_still_there()
+    entry1 = _test_entry(address: 0x0000, length: 0x0002, refs: { code: [0x0004, 0x0005], data: [0x0008] })
+    @memory_block.insert(entry: entry1, revision: 1)
+
+    entry2 = _test_entry(address: 0x0004, length: 0x0002)
+    @memory_block.insert(entry: entry2, revision: 1)
+
+    entry3 = _test_entry(address: 0x0008, length: 0x0002)
+    @memory_block.insert(entry: entry3, revision: 1)
+
+    @memory_block.delete(entry: entry2, revision: 2)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      results << {
+        entry: this_entry,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { entry: entry1, xrefs: {} },
+      { entry: _deleted_entry(address: 4, value: 4), xrefs: {code: [0x0000]} },
+      { entry: _deleted_entry(address: 5, value: 5), xrefs: {code: [0x0000]} },
+      { entry: entry3, xrefs: {data: [0x0000]} },
+    ]
+    assert_equal(expected, results)
+  end
+
+  def test_delete_recreate_ref_still_there()
+    entry1 = _test_entry(address: 0x0000, length: 0x0002, refs: { code: [0x0004, 0x0005], data: [0x0008] })
+    @memory_block.insert(entry: entry1, revision: 1)
+
+    entry2 = _test_entry(address: 0x0004, length: 0x0002, refs: { code: [0x0000] })
+    @memory_block.insert(entry: entry2, revision: 1)
+
+    entry3 = _test_entry(address: 0x0008, length: 0x0002)
+    @memory_block.insert(entry: entry3, revision: 1)
+
+    @memory_block.delete(entry: entry1, revision: 2)
+
+    entry4 = _test_entry(address: 0x0000, length: 0x0002, refs: { code: [0x0004, 0x0008] })
+    @memory_block.insert(entry: entry4, revision: 3)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      results << {
+        entry: this_entry,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { entry: entry4, xrefs: { code: [0x0004]} },
+      { entry: entry2, xrefs: { code: [0x0000]} },
+      { entry: entry3, xrefs: { code: [0x0000]} },
+    ]
+    assert_equal(expected, results)
+  end
 end

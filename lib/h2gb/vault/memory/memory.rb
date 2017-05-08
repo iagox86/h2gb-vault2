@@ -14,6 +14,7 @@ require 'yaml'
 require 'h2gb/vault/memory/memory_block'
 require 'h2gb/vault/memory/memory_entry'
 require 'h2gb/vault/memory/memory_error'
+require 'h2gb/vault/memory/memory_refs'
 require 'h2gb/vault/memory/memory_transaction'
 
 module H2gb
@@ -39,6 +40,11 @@ module H2gb
         })
         @in_transaction = false
 
+        @refs = {
+          code: MemoryRefs.new(),
+          data: MemoryRefs.new(),
+        }
+
         @mutex = Mutex.new()
       end
 
@@ -56,7 +62,7 @@ module H2gb
 
       private
       def _define_internal(entry:)
-        @memory_block.each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw, code_xrefs, data_xrefs|
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw|
           _undefine_internal(entry: this_entry)
         end
 
@@ -102,8 +108,12 @@ module H2gb
           raise(MemoryError, "Calls to define() must be wrapped in a transaction!")
         end
 
-        entry = MemoryEntry.new(address: address, type: type, value: value, length: length, code_refs: code_refs, data_refs: data_refs, user_defined: user_defined, comment: comment)
-        _define_internal(entry: entry)
+        refs = {
+          code_refs: code_refs,
+          data_refs: data_refs,
+        }
+        entry = MemoryEntry.new(address: address, type: type, value: value, length: length, refs: refs, user_defined: user_defined, comment: comment)
+        _define_internal(entry: entry, code_refs: code_refs, data_refs: data_refs)
       end
 
       public
@@ -112,7 +122,7 @@ module H2gb
           raise(MemoryError, "Calls to undefine() must be wrapped in a transaction!")
         end
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw, code_xrefs, data_xrefs|
+        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw|
           _undefine_internal(entry: entry)
         end
       end
@@ -166,18 +176,23 @@ module H2gb
             entries: [],
           }
 
-          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, code_xrefs, data_xrefs|
+          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw|
+            code_refs  = @code_refs.get_refs(address:  address)
+            code_xrefs = @code_refs.get_xrefs(address: address)
+            data_refs  = @data_refs.get_refs(address:  address)
+            data_xrefs = @data_refs.get_xrefs(address: address)
+
             result[:entries] << {
               address:      this_address,
               type:         entry.type,
               value:        entry.value,
               length:       entry.length,
-              code_refs:    entry.code_refs,
-              data_refs:    entry.data_refs,
               user_defined: entry.user_defined,
               comment:      entry.comment,
               raw:          raw,
+              code_refs:    code_refs,
               code_xrefs:   code_xrefs,
+              data_refs:    data_refs,
               data_xrefs:   data_xrefs,
             }
           end

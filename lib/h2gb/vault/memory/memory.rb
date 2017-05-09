@@ -103,17 +103,13 @@ module H2gb
       end
 
       public
-      def define(address:, type:, value:, length:, code_refs:, data_refs:, user_defined:, comment:)
+      def define(address:, type:, value:, length:, refs:, user_defined:, comment:)
         if not @in_transaction
           raise(MemoryError, "Calls to define() must be wrapped in a transaction!")
         end
 
-        refs = {
-          code_refs: code_refs,
-          data_refs: data_refs,
-        }
         entry = MemoryEntry.new(address: address, type: type, value: value, length: length, refs: refs, user_defined: user_defined, comment: comment)
-        _define_internal(entry: entry, code_refs: code_refs, data_refs: data_refs)
+        _define_internal(entry: entry)
       end
 
       public
@@ -176,24 +172,18 @@ module H2gb
             entries: [],
           }
 
-          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw|
-            code_refs  = @code_refs.get_refs(address:  address)
-            code_xrefs = @code_refs.get_xrefs(address: address)
-            data_refs  = @data_refs.get_refs(address:  address)
-            data_xrefs = @data_refs.get_xrefs(address: address)
+          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, xrefs|
 
             result[:entries] << {
               address:      this_address,
               type:         entry.type,
               value:        entry.value,
               length:       entry.length,
+              refs:         entry.refs,
               user_defined: entry.user_defined,
               comment:      entry.comment,
               raw:          raw,
-              code_refs:    code_refs,
-              code_xrefs:   code_xrefs,
-              data_refs:    data_refs,
-              data_xrefs:   data_xrefs,
+              xrefs:        xrefs,
             }
           end
 

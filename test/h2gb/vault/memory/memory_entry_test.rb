@@ -99,7 +99,7 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
     expected = [0x1234]
     assert_equal(expected, addresses)
   end
-#
+
   def test_each_address_multi_byte()
     memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
       address: 0x1000,
@@ -118,5 +118,19 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
 
     expected = [0x1000, 0x1001, 0x1002, 0x1003]
     assert_equal(expected, addresses)
+  end
+
+  def test_duplicate_refs()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x1234,
+      type: :type,
+      value: "value",
+      length: 10,
+      refs: {code: [4, 0, 0]},
+      user_defined: {test: "hi"},
+      comment: "bye",
+    )
+
+    assert_equal({code: [0, 4]}, memory_entry.refs)
   end
 end

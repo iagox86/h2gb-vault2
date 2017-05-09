@@ -52,7 +52,7 @@ module H2gb
           @value = value
           @length = length
           @comment = comment
-          @refs = refs
+          @refs = refs.map() { |ref_type, ref| [ref_type, ref.uniq().sort()] }.to_h()
 
           # Use the helper function for this
           self.user_defined = user_defined

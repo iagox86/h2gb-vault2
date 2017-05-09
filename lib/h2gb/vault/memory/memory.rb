@@ -81,10 +81,10 @@ module H2gb
       def _update_user_defined_internal(entry:, new_user_defined:)
         @transactions.add_to_current_transaction(type: UPDATE_USER_DEFINED_FORWARD, entry: {
           entry: entry,
-          old_data: entry.old_user_defined.clone(),
-          new_data: new_user_defined.clone(),
+          old_user_defined: entry.user_defined.clone(),
+          new_user_defined: new_user_defined.clone(),
         })
-        entry.user_defined = new_user_defined()
+        @memory_block.update_user_defined(entry: entry, user_defined: new_user_defined, revision: @transactions.revision)
       end
 
       private
@@ -94,9 +94,9 @@ module H2gb
         elsif action == ENTRY_UNDEFINE
           _undefine_internal(entry: entry)
         elsif action == UPDATE_USER_DEFINED_BACKWARD
-          _update_user_defined_internal(entry: entry[:entry], new_data: entry[:old_data], old_data: entry[:new_data])
+          _update_user_defined_internal(entry: entry[:entry], new_user_defined: entry[:old_user_defined])
         elsif action == UPDATE_USER_DEFINED_FORWARD
-          _update_user_defined_internal(entry: entry[:entry], new_data: entry[:new_data], old_data: entry[:old_data])
+          _update_user_defined_internal(entry: entry[:entry], new_user_defined: entry[:new_user_defined])
         else
           raise(MemoryError, "Unknown revision action: %s" % action)
         end
@@ -139,9 +139,12 @@ module H2gb
           raise(MemoryError, "Calls to replace_user_defined() must be wrapped in a transaction!")
         end
 
-        entry = @memory_block.get(address: address)
+        entry, _ = @memory_block.get(address: address, define_by_default: false)
+
+        # Automatically define the entry if it doesn't exist
         if entry.nil?
-          raise(MemoryError, "Setting user-defined for undefined address is not implemented (yet?)")
+          entry = MemoryEntry.default(address: address, raw: @memory_block.raw[address].ord())
+          _define_internal(entry: entry)
         end
 
         _update_user_defined_internal(entry: entry, new_user_defined: user_defined)
@@ -156,9 +159,12 @@ module H2gb
           raise(MemoryError, "user_defined must be a hash")
         end
 
-        entry = @memory_block.get(address: address)
+        entry, _ = @memory_block.get(address: address, define_by_default: false)
+
+        # Automatically define the entry if it doesn't exist
         if entry.nil?
-          raise(MemoryError, "Not implemented (yet?)")
+          entry = MemoryEntry.default(address: address, raw: @memory_block.raw[address].ord())
+          _define_internal(entry: entry)
         end
 
         _update_user_defined_internal(entry: entry, new_user_defined: entry.user_defined.merge(user_defined))

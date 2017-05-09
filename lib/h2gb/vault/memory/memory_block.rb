@@ -107,6 +107,11 @@ module H2gb
           end
         end
 
+        def update_user_defined(entry:, user_defined:, revision:)
+          entry.user_defined = user_defined
+          _poke_revision(revision: revision, address: entry.address)
+        end
+
         def _get_raw(entry:)
           return @raw[entry.address, entry.length].bytes()
         end
@@ -123,15 +128,7 @@ module H2gb
               return nil, {}
             end
 
-            entry = MemoryEntry.new(
-              address: address,
-              type: :uint8_t,
-              value: @raw[address].ord(),
-              length: 1,
-              refs: {},
-              user_defined: {},
-              comment: nil,
-            )
+            entry = MemoryEntry.default(address: address, raw: @raw[address].ord())
           end
 
           xrefs = {}
@@ -176,8 +173,8 @@ module H2gb
           end
         end
 
-        def get(address:)
-          return _get_entry(address: address)
+        def get(address:, define_by_default: true)
+          return _get_entry(address: address, include_undefined: define_by_default)
         end
 
         def to_s()

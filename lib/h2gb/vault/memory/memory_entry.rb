@@ -58,6 +58,18 @@ module H2gb
           self.user_defined = user_defined
         end
 
+        def self.default(address:, raw:)
+          return MemoryEntry.new(
+            address: address,
+            type: :uint8_t,
+            value: raw,
+            length: 1,
+            refs: {},
+            user_defined: {},
+            comment: nil,
+          )
+        end
+
         def user_defined=(new_user_defined)
           if !new_user_defined.is_a?(Hash)
             raise(MemoryError, "user_defined must be a hash!")

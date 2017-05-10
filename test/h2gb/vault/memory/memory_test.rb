@@ -2418,3 +2418,152 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     assert_equal(expected, result)
   end
 end
+
+class H2gb::Vault::ChangeCommentTest < Test::Unit::TestCase
+  def setup()
+    @memory = H2gb::Vault::Memory.new(raw: RAW)
+  end
+
+  def test_set_comment()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0001, comment: nil)
+    @memory.transaction() do
+      @memory.set_comment(address: 0x0000, comment: 'blahblah')
+    end
+
+    result = @memory.get(address: 0x00, length: 0x01, since:0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_change_comment()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0001, comment: 'hihi')
+    @memory.transaction() do
+      @memory.set_comment(address: 0x0000, comment: 'blahblah')
+    end
+
+    result = @memory.get(address: 0x00, length: 0x01, since:0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_remove_comment()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0001, comment: 'hihi')
+    @memory.transaction() do
+      @memory.set_comment(address: 0x0000, comment: nil)
+    end
+
+    result = @memory.get(address: 0x00, length: 0x01, since:0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: nil)
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+
+  def test_change_comment_undo_redo()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0001, comment: 'hihi')
+    @memory.transaction() do
+      @memory.set_comment(address: 0x0000, comment: 'blahblah')
+    end
+
+    result = @memory.get(address: 0x00, length: 0x01, since:0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0x01, since:0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'hihi')
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0x01, since:0)
+    expected = {
+      revision: 0x04,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_add_comment_no_entry()
+    @memory.transaction() do
+      @memory.set_comment(address: 0x0000, comment: 'blahblah')
+    end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x01,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, type: :uint8_t, raw: "\x00".bytes(), comment: 'blahblah', value: 0, user_defined: {}),
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.undo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
+      ]
+    }
+    assert_equal(expected, result)
+
+    @memory.redo()
+
+    result = @memory.get(address: 0x00, length: 0xFF, since:0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, type: :uint8_t, raw: "\x00".bytes(), comment: 'blahblah', value: 0, user_defined: {}),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_change_comment_updates_revision()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0001, comment: nil)
+    @memory.transaction() do
+      @memory.set_comment(address: 0x0000, comment: 'blahblah')
+    end
+
+    result = @memory.get(address: 0x00, length: 0x01, since:1)
+    expected = {
+      revision: 0x02,
+      entries: [
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
+      ]
+    }
+
+    assert_equal(expected, result)
+  end
+end

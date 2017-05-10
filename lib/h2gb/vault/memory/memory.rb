@@ -28,6 +28,9 @@ module H2gb
       UPDATE_USER_DEFINED_FORWARD = :update_user_defined_forward
       UPDATE_USER_DEFINED_BACKWARD = :update_user_defined_backward
 
+      SET_COMMENT_FORWARD = :set_comment_forward
+      SET_COMMENT_BACKWARD = :set_comment_backward
+
       public
       def initialize(raw:)
         @memory_block = MemoryBlock.new(raw: raw)
@@ -37,6 +40,9 @@ module H2gb
 
           UPDATE_USER_DEFINED_FORWARD => UPDATE_USER_DEFINED_BACKWARD,
           UPDATE_USER_DEFINED_BACKWARD => UPDATE_USER_DEFINED_FORWARD,
+
+          SET_COMMENT_FORWARD => SET_COMMENT_BACKWARD,
+          SET_COMMENT_BACKWARD => SET_COMMENT_FORWARD
         })
         @in_transaction = false
 
@@ -93,15 +99,29 @@ module H2gb
       end
 
       private
+      def _set_comment_internal(entry:, new_comment:)
+        @transactions.add_to_current_transaction(type: SET_COMMENT_FORWARD, entry: {
+          entry: entry,
+          old_comment: entry.comment,
+          new_comment: new_comment,
+        })
+        @memory_block.set_comment(entry: entry, comment: new_comment, revision: @transactions.revision)
+      end
+
+      private
       def _apply(action:, entry:)
         if action == ENTRY_DEFINE
           _define_internal(entry: entry)
         elsif action == ENTRY_UNDEFINE
           _undefine_internal(entry: entry)
-        elsif action == UPDATE_USER_DEFINED_BACKWARD
-          _update_user_defined_internal(entry: entry[:entry], new_user_defined: entry[:old_user_defined])
         elsif action == UPDATE_USER_DEFINED_FORWARD
           _update_user_defined_internal(entry: entry[:entry], new_user_defined: entry[:new_user_defined])
+        elsif action == UPDATE_USER_DEFINED_BACKWARD
+          _update_user_defined_internal(entry: entry[:entry], new_user_defined: entry[:old_user_defined])
+        elsif action == SET_COMMENT_FORWARD
+          _set_comment_internal(entry: entry[:entry], new_comment: entry[:new_comment])
+        elsif action == SET_COMMENT_BACKWARD
+          _set_comment_internal(entry: entry[:entry], new_comment: entry[:old_comment])
         else
           raise(MemoryError, "Unknown revision action: %s" % action)
         end
@@ -156,14 +176,7 @@ module H2gb
       end
 
       public
-      def update_user_defined(address:, user_defined:)
-        if not @in_transaction
-          raise(MemoryError, "Calls to update_user_defined() must be wrapped in a transaction!")
-        end
-        if !user_defined.is_a?(Hash)
-          raise(MemoryError, "user_defined must be a hash")
-        end
-
+      def _get_or_define_entry(address:)
         entry, _ = @memory_block.get(address: address, define_by_default: false)
 
         # Automatically define the entry if it doesn't exist
@@ -172,7 +185,27 @@ module H2gb
           _define_internal(entry: entry)
         end
 
+        return entry
+      end
+
+      public
+      def update_user_defined(address:, user_defined:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to update_user_defined() must be wrapped in a transaction!")
+        end
+
+        entry = _get_or_define_entry(address: address)
         _update_user_defined_internal(entry: entry, new_user_defined: entry.user_defined.merge(user_defined))
+      end
+
+      public
+      def set_comment(address:, comment:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
+        end
+
+        entry = _get_or_define_entry(address: address)
+        _set_comment_internal(entry: entry, new_comment: comment)
       end
 
       public

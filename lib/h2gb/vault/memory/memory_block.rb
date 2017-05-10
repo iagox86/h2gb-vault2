@@ -112,6 +112,11 @@ module H2gb
           _poke_revision(revision: revision, address: entry.address)
         end
 
+        def set_comment(entry:, comment:, revision:)
+          entry.comment = comment
+          _poke_revision(revision: revision, address: entry.address)
+        end
+
         def _get_raw(entry:)
           return @raw[entry.address, entry.length].bytes()
         end

@@ -51,10 +51,10 @@ module H2gb
           @type = type
           @value = value
           @length = length
-          @comment = comment
           @refs = refs.map() { |ref_type, ref| [ref_type, ref.uniq().sort()] }.to_h()
 
-          # Use the helper function for this
+          # Use the helper functions when they exist
+          self.comment = comment
           self.user_defined = user_defined
         end
 
@@ -75,6 +75,13 @@ module H2gb
             raise(MemoryError, "user_defined must be a hash!")
           end
           @user_defined = new_user_defined
+        end
+
+        def comment=(new_comment)
+          if !new_comment.is_a?(String) && !new_comment.nil?
+            raise(MemoryError, "user_defined must be a string or nil!")
+          end
+          @comment = new_comment
         end
 
         def each_address()

@@ -41,34 +41,6 @@ def _test_undefine(memory:, address:, length:, do_transaction:true)
   end
 end
 
-def _test_entry(address:, type: :type, value: "value", length:, refs: {}, user_defined: { test: 'hi' }, comment: 'bye', raw:, xrefs: {})
-  return {
-    address:      address,
-    type:         type,
-    value:        value,
-    length:       length,
-    refs:         refs,
-    user_defined: user_defined,
-    comment:      comment,
-    raw:          raw,
-    xrefs:        xrefs,
-  }
-end
-
-def _test_entry_deleted(address:, raw:, xrefs: {})
-  return {
-    address:      address,
-    type:         :uint8_t,
-    value:        raw[0],
-    length:       1,
-    refs:         {},
-    user_defined: {},
-    comment:      nil,
-    raw:          raw,
-    xrefs:        xrefs,
-  }
-end
-
 class H2gb::Vault::InsertTest < Test::Unit::TestCase
   def setup()
     @memory = H2gb::Vault::Memory.new(raw: RAW)
@@ -90,7 +62,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x01, raw: [0x00])
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00])
       ]
     }
 
@@ -104,7 +76,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x08, raw: "\x00\x01\x02\x03\x04\x05\x06\x07".bytes())
+        TestHelper.test_entry(address: 0x00, length: 0x08, raw: "\x00\x01\x02\x03\x04\x05\x06\x07".bytes())
       ]
     }
 
@@ -118,7 +90,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x80, length: 0x04, raw: "\x80\x81\x82\x83".bytes())
+        TestHelper.test_entry(address: 0x80, length: 0x04, raw: "\x80\x81\x82\x83".bytes())
       ]
     }
 
@@ -134,8 +106,8 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
-        _test_entry(address: 0x02, length: 0x02, raw: "\x02\x03".bytes()),
+        TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
+        TestHelper.test_entry(address: 0x02, length: 0x02, raw: "\x02\x03".bytes()),
       ]
     }
 
@@ -153,8 +125,8 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 1,
       entries: [
-        _test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
-        _test_entry(address: 0x02, length: 0x02, raw: "\x02\x03".bytes()),
+        TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
+        TestHelper.test_entry(address: 0x02, length: 0x02, raw: "\x02\x03".bytes()),
       ]
     }
 
@@ -170,8 +142,8 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
-        _test_entry(address: 0x80, length: 0x02, raw: "\x80\x81".bytes()),
+        TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
+        TestHelper.test_entry(address: 0x80, length: 0x02, raw: "\x80\x81".bytes()),
       ]
     }
 
@@ -186,7 +158,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
       ]
     }
 
@@ -201,10 +173,10 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x01, raw: "\x00".bytes(), user_defined: { test: 'B'} ),
-        _test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x02, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x03, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: "\x00".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x02, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x03, raw: "\x03".bytes()),
       ]
     }
 
@@ -219,13 +191,13 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x02, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x03, raw: "\x03".bytes()),
-        _test_entry(address: 0x04, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'B'} ),
-        _test_entry_deleted(address: 0x06, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x07, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x02, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x03, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x04, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry_deleted(address: 0x06, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x07, raw: "\x07".bytes()),
       ]
     }
 
@@ -241,9 +213,9 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
-        _test_entry(address: 0x01, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'C'} ),
-        _test_entry_deleted(address: 0x03, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
+        TestHelper.test_entry(address: 0x01, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry_deleted(address: 0x03, raw: "\x03".bytes()),
       ]
     }
 
@@ -259,7 +231,7 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x00, length: 0x80, raw: (0x00..0x7F).to_a(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x00, length: 0x80, raw: (0x00..0x7F).to_a(), user_defined: { test: 'C'} ),
       ]
     }
 
@@ -273,9 +245,9 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x01, raw: [0x00], refs: { code: [0x10], data: [0x20] }),
-        _test_entry_deleted(address: 0x10, raw: "\x10".bytes(), xrefs: { code: [0x0000] }),
-        _test_entry_deleted(address: 0x20, raw: "\x20".bytes(), xrefs: { data: [0x0000] }),
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], refs: { code: [0x10], data: [0x20] }),
+        TestHelper.test_entry_deleted(address: 0x10, raw: "\x10".bytes(), xrefs: { code: [0x0000] }),
+        TestHelper.test_entry_deleted(address: 0x20, raw: "\x20".bytes(), xrefs: { data: [0x0000] }),
       ]
     }
 
@@ -290,8 +262,8 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
       ]
     }
 
@@ -309,12 +281,12 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x00, length: 0x01, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x02, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x04, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x05, raw: "\x05".bytes()),
-        _test_entry(address: 0x07, length: 0x02, raw: "\x07\x08".bytes()),
+        TestHelper.test_entry(address: 0x00, length: 0x01, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x02, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x04, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x05, raw: "\x05".bytes()),
+        TestHelper.test_entry(address: 0x07, length: 0x02, raw: "\x07\x08".bytes()),
       ]
     }
 
@@ -329,9 +301,9 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x10, raw: "\x10".bytes()),
-        _test_entry_deleted(address: 0x20, raw: "\x20".bytes()),
+        TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x10, raw: "\x10".bytes()),
+        TestHelper.test_entry_deleted(address: 0x20, raw: "\x20".bytes()),
       ]
     }
 
@@ -410,7 +382,7 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
       ],
     }
 
@@ -425,10 +397,10 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
       ],
     }
 
@@ -443,7 +415,7 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x10, raw: (0x00..0x0F).to_a(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x00, length: 0x10, raw: (0x00..0x0F).to_a(), user_defined: { test: 'A'} ),
       ],
     }
 
@@ -458,10 +430,10 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
       ],
     }
 
@@ -476,10 +448,10 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
       ],
     }
 
@@ -496,18 +468,18 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes()),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
-        _test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
       ],
     }
 
@@ -524,12 +496,12 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
       ],
     }
 
@@ -547,16 +519,16 @@ class H2gb::Vault::DeleteTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes()),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
-        _test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
-        _test_entry(address: 0x000c, length: 0x04, raw: "\x0c\x0d\x0e\x0f".bytes(), user_defined: { test: 'D'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
+        TestHelper.test_entry(address: 0x000c, length: 0x04, raw: "\x0c\x0d\x0e\x0f".bytes(), user_defined: { test: 'D'} ),
       ],
     }
 
@@ -579,9 +551,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
       ],
     }
 
@@ -597,9 +569,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -609,10 +581,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -622,11 +594,11 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -636,12 +608,12 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ],
     }
     assert_equal(expected, result)
@@ -657,10 +629,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 4,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ]
     }
 
@@ -681,9 +653,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
       ],
     }
     assert_equal(expected, result)
@@ -694,10 +666,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ],
     }
     assert_equal(expected, result)
@@ -708,11 +680,11 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ],
     }
     assert_equal(expected, result)
@@ -723,12 +695,12 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ],
     }
     assert_equal(expected, result)
@@ -746,10 +718,10 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -759,11 +731,11 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -785,8 +757,8 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'B'} ),
       ]
     }
 
@@ -801,8 +773,8 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'B'} ),
       ]
     }
     assert_equal(expected, result)
@@ -812,8 +784,8 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -834,9 +806,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'C'} ),
-        _test_entry(address: 0x0003, length: 0x02, raw: "\x03\x04".bytes(), user_defined: { test: 'D'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0003, length: 0x02, raw: "\x03\x04".bytes(), user_defined: { test: 'D'} ),
       ]
     }
     assert_equal(expected, result)
@@ -856,9 +828,9 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -874,7 +846,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
 
       ],
     }
@@ -886,7 +858,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
       ],
     }
     assert_equal(expected, result)
@@ -897,7 +869,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
       ],
     }
     assert_equal(expected, result)
@@ -908,7 +880,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
       ],
     }
     assert_equal(expected, result)
@@ -919,7 +891,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
       ],
     }
     assert_equal(expected, result)
@@ -930,7 +902,7 @@ class H2gb::Vault::UndoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
       ],
     }
     assert_equal(expected, result)
@@ -953,8 +925,8 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
       ]
     }
 
@@ -974,12 +946,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -989,11 +961,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1003,10 +975,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1016,9 +988,9 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1036,8 +1008,8 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
       ]
     }
 
@@ -1058,9 +1030,9 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
       ],
     }
     assert_equal(expected, result)
@@ -1071,10 +1043,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ],
     }
     assert_equal(expected, result)
@@ -1085,11 +1057,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
       ],
     }
     assert_equal(expected, result)
@@ -1100,12 +1072,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
       ],
     }
     assert_equal(expected, result)
@@ -1116,11 +1088,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
       ],
     }
     assert_equal(expected, result)
@@ -1131,10 +1103,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ],
     }
     assert_equal(expected, result)
@@ -1144,10 +1116,10 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'C'} ),
       ],
     }
     assert_equal(expected, result)
@@ -1166,12 +1138,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     assert_equal({
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
       ],
     }, result)
 
@@ -1181,11 +1153,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
       ]
     }
     assert_equal(expected, result)
@@ -1198,12 +1170,12 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
-        _test_entry(address: 0x0006, length: 0x02, raw: "\x06\x07".bytes(), user_defined: { test: 'D'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry(address: 0x0006, length: 0x02, raw: "\x06\x07".bytes(), user_defined: { test: 'D'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1224,8 +1196,8 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
       ]
     }
 
@@ -1248,7 +1220,7 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry(address: 0x0000, length: 0x03, raw: "\x00\x01\x02".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x03, raw: "\x00\x01\x02".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1278,11 +1250,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
-        _test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'D'} ),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes() ),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes() ),
+        TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'D'} ),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes() ),
       ]
     }
     assert_equal(expected, result)
@@ -1294,11 +1266,11 @@ class H2gb::Vault::RedoTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'E'} ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'D'} ),
-        _test_entry(address: 0x0006, length: 0x02, raw: "\x06\x07".bytes(), user_defined: { test: 'F'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'E'} ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0004, length: 0x02, raw: "\x04\x05".bytes(), user_defined: { test: 'D'} ),
+        TestHelper.test_entry(address: 0x0006, length: 0x02, raw: "\x06\x07".bytes(), user_defined: { test: 'F'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1318,9 +1290,9 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x1,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'A'} ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
       ]
     }
 
@@ -1334,7 +1306,7 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x1,
       entries: [
-        _test_entry(address: 0x0000, length: 0x01, raw: "\x00".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x01, raw: "\x00".bytes(), user_defined: { test: 'A'} ),
       ]
     }
 
@@ -1350,9 +1322,9 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1361,8 +1333,8 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1371,7 +1343,7 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1393,11 +1365,11 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1406,11 +1378,11 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1419,9 +1391,9 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x3,
       entries: [
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1446,12 +1418,12 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes() ),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes() ),
       ]
     }
     assert_equal(expected, result)
@@ -1460,12 +1432,12 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes() ),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes() ),
       ]
     }
     assert_equal(expected, result)
@@ -1474,10 +1446,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes() ),
       ]
     }
     assert_equal(expected, result)
@@ -1486,8 +1458,8 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
       ]
     }
     assert_equal(expected, result)
@@ -1515,10 +1487,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1527,10 +1499,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1539,10 +1511,10 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
-        _test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
-        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
+        TestHelper.test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1551,7 +1523,7 @@ class H2gb::Vault::GetChangesSinceTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
       ]
     }
     assert_equal(expected, result)
@@ -1571,8 +1543,8 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000]} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000]} ),
       ]
     }
     assert_equal(expected, result)
@@ -1586,8 +1558,8 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {data: [0x0004], code: [0x0004]} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {data: [0x0000], code: [0x0000, 0x0004]}, xrefs: {code: [0x0004]} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {data: [0x0004], code: [0x0004]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {data: [0x0000], code: [0x0000, 0x0004]}, xrefs: {code: [0x0004]} ),
       ]
     }
     assert_equal(expected, result)
@@ -1601,8 +1573,8 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0002]} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0002]} ),
       ]
     }
     assert_equal(expected, result)
@@ -1616,8 +1588,8 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0002]} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0002]} ),
       ]
     }
     assert_equal(expected, result)
@@ -1632,9 +1604,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, xrefs: {code: [0x0000]}),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, xrefs: {code: [0x0000]}),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, xrefs: {code: [0x0000]}),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, xrefs: {code: [0x0000]}),
       ]
     }
     assert_equal(expected, result)
@@ -1649,9 +1621,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009]} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0008] }, xrefs: {code: [0x0000]} ),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, xrefs: { code: [0x000, 0x0004] } ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0008] }, xrefs: {code: [0x0000]} ),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, xrefs: { code: [0x000, 0x0004] } ),
       ]
     }
     assert_equal(expected, result)
@@ -1665,8 +1637,8 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0000] }, xrefs: { code: [0x0000]} ),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0005] }, xrefs: {} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0000] }, xrefs: { code: [0x0000]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0005] }, xrefs: {} ),
       ]
     }
     assert_equal(expected, result)
@@ -1683,12 +1655,12 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x0004] }),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes(), xrefs: { code: [0x0004] }),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: {} ),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x0004] }),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes(), xrefs: { code: [0x0004] }),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: {} ),
       ]
     }
     assert_equal(expected, result)
@@ -1704,12 +1676,12 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x04] }),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes(), xrefs: { code: [0x04] }),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x04] }),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes(), xrefs: { code: [0x04] }),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }),
       ]
     }
     assert_equal(expected, result)
@@ -1720,9 +1692,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x05,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }, xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }, xrefs: { code: [0x00] }),
       ]
     }
     assert_equal(expected, result)
@@ -1733,12 +1705,12 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x04] }),
-        _test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x04] }),
+        TestHelper.test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1749,15 +1721,15 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x07,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
-        _test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1768,18 +1740,18 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x08,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes()),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
-        _test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1790,15 +1762,15 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
-        _test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1809,12 +1781,12 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x0a,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x04] }),
-        _test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x0009, raw: "\x09".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x04] }),
+        TestHelper.test_entry_deleted(address: 0x000b, raw: "\x0b".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1825,9 +1797,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x0b,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }, xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }, xrefs: { code: [0x00] }),
       ]
     }
     assert_equal(expected, result)
@@ -1838,12 +1810,12 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x0c,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x04] }),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes(), xrefs: { code: [0x04] }),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }),
-        _test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x04] }),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes(), xrefs: { code: [0x04] }),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }),
+        TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0007] }),
       ]
     }
     assert_equal(expected, result)
@@ -1858,10 +1830,10 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -1870,9 +1842,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -1881,9 +1853,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -1896,16 +1868,16 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1914,14 +1886,14 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1930,12 +1902,12 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -1948,10 +1920,10 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -1960,9 +1932,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -1971,9 +1943,9 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -1996,10 +1968,10 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -2008,9 +1980,9 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -2019,9 +1991,9 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -2034,16 +2006,16 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
-        _test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0008, raw: "\x08".bytes()),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -2052,14 +2024,14 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
-        _test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
-        _test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0006, raw: "\x06".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0007, raw: "\x07".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -2068,12 +2040,12 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x06,
       entries: [
-        _test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
-        _test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
-        _test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
-        _test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
-        _test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0005, raw: "\x05".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -2086,10 +2058,10 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -2098,9 +2070,9 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -2109,9 +2081,9 @@ class H2gb::Vault::SaveRestoreTest < Test::Unit::TestCase
     expected = {
       revision: 0x09,
       entries: [
-        _test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
-        _test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
-        _test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
+        TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
+        TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
       ]
     }
     assert_equal(expected, result)
@@ -2136,7 +2108,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
       ]
     }
     assert_equal(expected, result)
@@ -2149,7 +2121,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
       ]
     }
     assert_equal(expected, result)
@@ -2162,7 +2134,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
       ]
     }
     assert_equal(expected, result)
@@ -2175,7 +2147,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
       ]
     }
     assert_equal(expected, result)
@@ -2188,7 +2160,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
       ]
     }
     assert_equal(expected, result)
@@ -2201,7 +2173,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
       ]
     }
     assert_equal(expected, result)
@@ -2212,7 +2184,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
       ]
     }
     assert_equal(expected, result)
@@ -2223,7 +2195,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
       ]
     }
     assert_equal(expected, result)
@@ -2236,7 +2208,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
       ]
     }
     assert_equal(expected, result)
@@ -2249,7 +2221,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
       ]
     }
     assert_equal(expected, result)
@@ -2260,7 +2232,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
       ]
     }
     assert_equal(expected, result)
@@ -2271,7 +2243,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
       ]
     }
     assert_equal(expected, result)
@@ -2285,8 +2257,8 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
-        _test_entry(address: 0x04, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test2: "B" }),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
+        TestHelper.test_entry(address: 0x04, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test2: "B" }),
       ]
     }
     assert_equal(expected, result)
@@ -2307,7 +2279,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test3: "C" }),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test3: "C" }),
       ]
     }
     assert_equal(expected, result)
@@ -2320,7 +2292,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x04, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test2: "B", test4: "D" }),
+        TestHelper.test_entry(address: 0x04, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test2: "B", test4: "D" }),
       ]
     }
     assert_equal(expected, result)
@@ -2343,7 +2315,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x01,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
       ]
     }
     assert_equal(expected, result)
@@ -2356,7 +2328,7 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
       ]
     }
     assert_equal(expected, result)
@@ -2373,8 +2345,8 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
-        _test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
+        TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
       ]
     }
     assert_equal(expected, result)
@@ -2385,8 +2357,8 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
-        _test_entry_deleted(address: 0x08, raw: "\x08".bytes()),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
+        TestHelper.test_entry_deleted(address: 0x08, raw: "\x08".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -2397,8 +2369,8 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
-        _test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
+        TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
       ]
     }
     assert_equal(expected, result)
@@ -2415,8 +2387,8 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
-        _test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
+        TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
       ]
     }
     assert_equal(expected, result)
@@ -2427,8 +2399,8 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x03,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
-        _test_entry_deleted(address: 0x08, raw: "\x08".bytes()),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
+        TestHelper.test_entry_deleted(address: 0x08, raw: "\x08".bytes()),
       ]
     }
     assert_equal(expected, result)
@@ -2439,8 +2411,8 @@ class H2gb::Vault::UserDefinedTest < Test::Unit::TestCase
     expected = {
       revision: 0x04,
       entries: [
-        _test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
-        _test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
+        TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
+        TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
       ]
     }
     assert_equal(expected, result)

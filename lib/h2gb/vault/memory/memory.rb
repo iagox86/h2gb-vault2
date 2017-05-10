@@ -49,6 +49,11 @@ module H2gb
       end
 
       public
+      def raw()
+        return @memory_block.raw
+      end
+
+      public
       def transaction()
         @mutex.synchronize() do
           @in_transaction = true
@@ -103,7 +108,7 @@ module H2gb
       end
 
       public
-      def define(address:, type:, value:, length:, refs:, user_defined:, comment:)
+      def define(address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
         if not @in_transaction
           raise(MemoryError, "Calls to define() must be wrapped in a transaction!")
         end
@@ -195,6 +200,11 @@ module H2gb
 
           return result
         end
+      end
+
+      public
+      def get_single(address:)
+        return get(address: address, length: 1, since: -1)[:entries].pop()
       end
 
       public

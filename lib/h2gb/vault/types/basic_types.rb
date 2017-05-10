@@ -13,52 +13,47 @@ require 'h2gb/vault/memory/memory_error'
 
 module H2gb
   module Vault
-    class BasicTypes
-      BIG_ENDIAN = :big_endian
-      LITTLE_ENDIAN = :little_endian
+    module BasicTypes
+      def _make_uint8_t(address:, options:, user_defined:)
+        _sanity_check(address: address, length: 1)
 
-      def initialize(memory:)
-        @memory = memory
+        value = @memory.raw[address].ord()
+
+        @memory.define(
+          address: address,
+          type: :uint8_t,
+          value: value,
+          length: 1,
+          user_defined: user_defined,
+        )
       end
 
-      def _sanity_check(offset:, length:)
-        if offset < 0
-          raise(H2gb::Vault::Memory::MemoryError, "Offset must be positive")
-        end
-        if offset + length > @memory.memory_block.raw.length
-          raise(H2gb::Vault::Memory::MemoryError, "Variable would go off the end of memory")
-        end
-      end
+      def _make_uint16_t(address:, options:, user_defined:)
+        _sanity_check(address: address, length: 2)
 
-      def uint8_t(offset:)
-        _sanity_check(offset: offset, length: 1)
-
-        value = @memory.memory_block.raw[offset].ord()
-        @memory.transaction() do
-          @memory.insert(address: offset, length: 1, data: {
-            type: :uint8_t,
-            value: value,
-          })
-        end
-      end
-
-      def uint16_t(offset:, endian:)
-        _sanity_check(offset: offset, length: 2)
-
-        if endian == BIG_ENDIAN
-          value = @memory.memory_block.raw[offset,2].unpack("n").pop()
-        elsif
-          value = @memory.memory_block.raw[offset,2].unpack("v").pop()
+        if options[:endian] == :big_endian
+          value = @memory.raw[address,2].unpack("n").pop()
         else
-          raise(H2gb::Vault::Memory::MemoryError, "Unknown endian type: %s" % endian.to_s())
+          value = @memory.raw[address,2].unpack("v").pop()
         end
 
-        @memory.transaction() do
-          @memory.insert(address: offset, length: 2, data: {
-            type: :uint16_t,
-            value: value,
-            endian: endian,
-          })
+        @memory.define(
+          address: address,
+          type: :uint16_t,
+          value: value,
+          length: 2,
+          user_defined: user_defined,
+        )
+      end
+
+      def _define_basic_type(item:)
+        case item[:type]
+        when :uint8_t
+          _make_uint8_t(address: item[:address], options: item[:options] || {}, user_defined: item[:user_defined])
+        when :uint16_t
+          _make_uint16_t(address: item[:address], options: item[:options] || {}, user_defined: item[:user_defined])
+        else
+          raise H2gb::Vault::Memory::MemoryError("Unknown type: %s" % item[:type])
         end
       end
     end

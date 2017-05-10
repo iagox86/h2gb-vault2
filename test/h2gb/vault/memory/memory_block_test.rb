@@ -10,6 +10,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     @memory_block = H2gb::Vault::Memory::MemoryBlock.new(raw: raw)
   end
 
+  # TODO: Port this class to use TestHelper.test_entry()
   def _test_entry(address: 0x0000, type: :type, value: "value", length: 0x0001, refs: {}, user_defined: { test: 'hi' }, comment: 'bye')
     return H2gb::Vault::Memory::MemoryEntry.new(
       address: address,
@@ -47,7 +48,7 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
     addresses = []
     entries = []
     raws = []
-    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0001) do |address, this_entry, raw, xrefs|
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
       addresses << address
       entries << entry
       raws << raw
@@ -463,5 +464,75 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       { entry: entry3, xrefs: { code: [0x0000]} },
     ]
     assert_equal(expected, results)
+  end
+
+  def test_add_reference()
+    entry = _test_entry(address: 0x0000, length: 0x0001)
+    @memory_block.insert(entry: entry, revision: 1)
+    @memory_block.add_reference(entry: entry, to: 0x0004, type: :test, revision: 1)
+
+    result = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      result << {
+        address: address,
+        refs: this_entry.refs,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { address: 0x0000, refs: { test: [0x0004] }, xrefs: {} },
+      { address: 0x0004, refs: {}, xrefs: { test: [0x0000] } },
+    ]
+
+    assert_equal(expected, result)
+  end
+
+  def test_add_reference_when_one_is_already_there()
+    entry = _test_entry(address: 0x0000, length: 0x0001, refs: { code: [0x0004], test: [0x0008] })
+    @memory_block.insert(entry: entry, revision: 1)
+    @memory_block.add_reference(entry: entry, to: 0x0004, type: :test, revision: 1)
+
+    result = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      result << {
+        address: address,
+        refs: this_entry.refs,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { address: 0x0000, refs: { code: [0x0004], test: [0x0004, 0x0008] }, xrefs: {} },
+      { address: 0x0004, refs: {}, xrefs: { test: [0x0000], code: [0x0000] } },
+      { address: 0x0008, refs: {}, xrefs: { test: [0x0000] } },
+    ]
+
+    assert_equal(expected, result)
+  end
+
+  def test_remove_reference()
+    entry = _test_entry(address: 0x0000, length: 0x0001, refs: { code: [0x0004], test: [0x0008] })
+    @memory_block.insert(entry: entry, revision: 1)
+    @memory_block.add_reference(entry: entry, to: 0x0004, type: :test, revision: 1)
+    @memory_block.remove_reference(entry: entry, to: 0x0004, type: :test, revision: 1)
+    @memory_block.remove_reference(entry: entry, to: 0x0008, type: :test, revision: 1)
+
+    result = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x00FF, since: 0) do |address, this_entry, raw, xrefs|
+      result << {
+        address: address,
+        refs: this_entry.refs,
+        xrefs: xrefs,
+      }
+    end
+
+    expected = [
+      { address: 0x0000, refs: { code: [0x0004], }, xrefs: {} },
+      { address: 0x0004, refs: {}, xrefs: { code: [0x0000] } },
+      { address: 0x0008, refs: {}, xrefs: { } },
+    ]
+
+    assert_equal(expected, result)
   end
 end

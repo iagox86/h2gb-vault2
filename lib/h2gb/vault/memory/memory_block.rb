@@ -72,7 +72,7 @@ module H2gb
           # Deal with references
           entry.refs.each_pair() do |type, refs|
             # Create the refs type if it doesn't exist
-            @refs[type] = @refs[type] || MemoryRefs.new()
+            @refs[type] = @refs[type] || MemoryRefs.new(type: type)
 
             # This little loop is a little kludgy, but it's the best way I can think
             # of to update the revision on the xrefs; if we don't do this, they
@@ -117,6 +117,26 @@ module H2gb
           _poke_revision(revision: revision, address: entry.address)
         end
 
+        # TODO: I still need to do some re-thinking on how refs work, the
+        # other places are kludgy and this is just plain bleh
+        def add_reference(entry:, to:, type:, revision:)
+          entry.add_reference(to: to, type: type)
+
+          @refs[type] = @refs[type] || MemoryRefs.new(type: type)
+          @refs[type].insert(address: entry.address, refs: [to]).each() do |address|
+            _poke_revision(revision: revision, address: address)
+          end
+        end
+
+        def remove_reference(entry:, to:, type:, revision:)
+          entry.remove_reference(to: to, type: type)
+
+          @refs[type] = @refs[type] || MemoryRefs.new()
+          @refs[type].delete(address: entry.address, refs: [to]).each() do |address|
+            _poke_revision(revision: revision, address: address)
+          end
+        end
+
         def _get_raw(entry:)
           return @raw[entry.address, entry.length].bytes()
         end
@@ -149,13 +169,12 @@ module H2gb
           return entry, xrefs
         end
 
-        # TODO: Do a proper test for include_undefined
         def each_entry_in_range(address:, length:, since: 0, include_undefined: true)
           i = address
 
           while i < address + length
             entry, xrefs = _get_entry(address: i, include_undefined: include_undefined)
-            if entry.nil?
+            if entry.nil? # TODO: I don't think this is necessary
               i += 1
               next
             end

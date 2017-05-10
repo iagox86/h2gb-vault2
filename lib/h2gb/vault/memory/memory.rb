@@ -31,6 +31,9 @@ module H2gb
       SET_COMMENT_FORWARD = :set_comment_forward
       SET_COMMENT_BACKWARD = :set_comment_backward
 
+      ADD_REFERENCE = :add_reference
+      REMOVE_REFERENCE = :remove_reference
+
       public
       def initialize(raw:)
         @memory_block = MemoryBlock.new(raw: raw)
@@ -42,7 +45,10 @@ module H2gb
           UPDATE_USER_DEFINED_BACKWARD => UPDATE_USER_DEFINED_FORWARD,
 
           SET_COMMENT_FORWARD => SET_COMMENT_BACKWARD,
-          SET_COMMENT_BACKWARD => SET_COMMENT_FORWARD
+          SET_COMMENT_BACKWARD => SET_COMMENT_FORWARD,
+
+          ADD_REFERENCE => REMOVE_REFERENCE,
+          REMOVE_REFERENCE => ADD_REFERENCE,
         })
         @in_transaction = false
 
@@ -109,6 +115,26 @@ module H2gb
       end
 
       private
+      def _add_reference_internal(entry:, to:, type:)
+        @transactions.add_to_current_transaction(type: ADD_REFERENCE, entry: {
+          entry: entry,
+          to: to,
+          type: type,
+        })
+        @memory_block.add_reference(entry: entry, to: to, type: type)
+      end
+
+      private
+      def _remove_reference_internal(entry:, to:, type:)
+        @transactions.add_to_current_transaction(type: REMOVE_REFERENCE, entry: {
+          entry: entry,
+          to: to,
+          type: type,
+        })
+        @memory_block.remove_reference(entry: entry, to: to, type: type)
+      end
+
+      private
       def _apply(action:, entry:)
         if action == ENTRY_DEFINE
           _define_internal(entry: entry)
@@ -122,6 +148,10 @@ module H2gb
           _set_comment_internal(entry: entry[:entry], new_comment: entry[:new_comment])
         elsif action == SET_COMMENT_BACKWARD
           _set_comment_internal(entry: entry[:entry], new_comment: entry[:old_comment])
+        elsif action == ADD_REFERENCE
+          _add_reference_internal(entry: entry[:entry], to: entry[:to], type: entry[:type])
+        elsif action == REMOVE_REFERENCE
+          _remove_reference_internal(entry: entry[:entry], to: entry[:to], type: entry[:type])
         else
           raise(MemoryError, "Unknown revision action: %s" % action)
         end
@@ -206,6 +236,26 @@ module H2gb
 
         entry = _get_or_define_entry(address: address)
         _set_comment_internal(entry: entry, new_comment: comment)
+      end
+
+      public
+      def add_reference(address:, to:, type:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
+        end
+
+        entry = _get_or_define_entry(address: address)
+        _add_reference_internal(entry: entry, to: to, type: type)
+      end
+
+      public
+      def remove_reference(address:, to:, type:)
+        if not @in_transaction
+          raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
+        end
+
+        entry = _get_or_define_entry(address: address)
+        _remove_reference_internal(entry: entry, to: to, type: type)
       end
 
       public

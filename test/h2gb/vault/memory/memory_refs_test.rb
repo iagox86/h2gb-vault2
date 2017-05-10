@@ -19,14 +19,6 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
     assert_equal([0x0000], xrefs)
   end
 
-  def test_insert_bad_duplicate()
-    @memory_refs.insert(address: 0x0000, refs: [0x0004])
-
-    assert_raises(H2gb::Vault::Memory::MemoryError) do
-      @memory_refs.insert(address: 0x0000, refs: [0x0008])
-    end
-  end
-
   def get_refs_no_refs()
     @memory_refs.insert(address: 0x0000, refs: [])
 
@@ -166,5 +158,13 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
 
   def test_delete_missing()
     @memory_refs.delete(address: 0x0000)
+  end
+
+  def test_add_to_existing()
+    @memory_refs.insert(address: 0x0000, refs: [0x0004])
+    @memory_refs.insert(address: 0x0000, refs: [0x0008])
+
+    refs = @memory_refs.get_refs(address: 0x0000)
+    assert_equal([0x0004, 0x0008], refs)
   end
 end

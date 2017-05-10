@@ -133,4 +133,82 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
 
     assert_equal({code: [0, 4]}, memory_entry.refs)
   end
+
+  def test_add_reference()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x1234,
+      type: :type,
+      value: "value",
+      length: 10,
+      refs: {},
+      user_defined: {test: "hi"},
+      comment: "bye",
+    )
+    memory_entry.add_reference(to: 0x4321, type: :code)
+
+    assert_equal({code: [0x4321]}, memory_entry.refs)
+  end
+
+  def test_add_reference_when_type_already_exists()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x1234,
+      type: :type,
+      value: "value",
+      length: 10,
+      refs: {code: [0x0000, 0xFFFF]},
+      user_defined: {test: "hi"},
+      comment: "bye",
+    )
+    memory_entry.add_reference(to: 0x4321, type: :code)
+
+    assert_equal({code: [0x0000, 0x4321, 0xFFFF]}, memory_entry.refs)
+  end
+
+  def test_add_duplicate_reference()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x1234,
+      type: :type,
+      value: "value",
+      length: 10,
+      refs: {code: [0x0000, 0xFFFF]},
+      user_defined: {test: "hi"},
+      comment: "bye",
+    )
+    memory_entry.add_reference(to: 0x4321, type: :code)
+    memory_entry.add_reference(to: 0x0000, type: :code)
+    memory_entry.add_reference(to: 0xFFFF, type: :code)
+
+    assert_equal({code: [0x0000, 0x4321, 0xFFFF]}, memory_entry.refs)
+  end
+
+  def test_remove_reference()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x1234,
+      type: :type,
+      value: "value",
+      length: 10,
+      refs: {code: [0x0000, 0xFFFF]},
+      user_defined: {test: "hi"},
+      comment: "bye",
+    )
+    memory_entry.remove_reference(to: 0x0000, type: :code)
+
+    assert_equal({code: [0xFFFF]}, memory_entry.refs)
+  end
+
+  def test_remove_last_reference()
+    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
+      address: 0x1234,
+      type: :type,
+      value: "value",
+      length: 10,
+      refs: {code: [0x0000, 0xFFFF]},
+      user_defined: {test: "hi"},
+      comment: "bye",
+    )
+    memory_entry.remove_reference(to: 0x0000, type: :code)
+    memory_entry.remove_reference(to: 0xFFFF, type: :code)
+
+    assert_equal({}, memory_entry.refs)
+  end
 end

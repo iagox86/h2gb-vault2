@@ -41,11 +41,27 @@ module H2gb
           raise MemoryError("address must be a positive integer")
         end
 
+        # Do the action
         case item[:action]
         when :define_basic_type
           _define_basic_type(item: item)
+        when :set_comment
+          @memory.set_comment(address: item[:address], comment: item[:comment])
+        when :add_reference
+          @memory.add_reference(address: item[:address], type: item[:type], to: item[:to])
         else
-          raise MemoryError("unknown action: %s" % item[:action])
+          # TODO: This raise isn't working, but I plan to move MemoryError anyways
+          raise H2gb::Vault::Memory::MemoryError("Unknown action: %s" % item[:action])
+        end
+
+        # Apply a comment if one exists
+        if item[:comment]
+          @memory.set_comment(address: item[:address], comment: item[:comment])
+        end
+
+        # Apply user-defined if it exists
+        if item[:user_defined]
+          @memory.replace_user_defined(address: item[:address], user_defined: item[:user_defined])
         end
       end
 

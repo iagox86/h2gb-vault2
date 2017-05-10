@@ -90,6 +90,43 @@ module H2gb
           end
         end
 
+        def add_reference(to:, type:)
+          if !to.is_a?(Integer)
+            raise(MemoryError, "references must be integers!")
+          end
+          if type.is_a?(String)
+            type = type.to_sym()
+          end
+          if !type.is_a?(Symbol)
+            raise(MemoryError, "reference types must be either Strings or Integers!")
+          end
+
+          @refs[type] = @refs[type] || []
+          @refs[type] = (@refs[type] + [to]).uniq().sort()
+        end
+
+        def remove_reference(to:, type:)
+          if !to.is_a?(Integer)
+            raise(MemoryError, "References must be integers!")
+          end
+          if type.is_a?(String)
+            type = type.to_sym()
+          end
+          if !type.is_a?(Symbol)
+            raise(MemoryError, "Reference types must be either Strings or Integers!")
+          end
+
+          # TODO: There might be trouble with de-duplication and undo/redo events..
+          # if you add the same ref twice then undo twice, the behaviour might get weird.
+          # I'm starting to think I maybe shouldn't de-dupe references
+          @refs[type].delete(to)
+
+          # Get rid of the type completely if it was the last one
+          if @refs[type].length == 0
+            @refs.delete(type)
+          end
+        end
+
         def value_to_s()
           if @type == :uint8_t
             return "0x%02x" % @value

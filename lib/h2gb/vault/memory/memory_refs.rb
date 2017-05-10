@@ -17,14 +17,12 @@ module H2gb
     class Memory
       class MemoryRef
         attr_reader :address, :refs
-        def initialize(address:, refs:)
-          if !address.is_a?(Integer)
-            raise(MemoryError, "address must be an integer!")
-          end
-          if address < 0
-            raise(MemoryError, "address must not be negative!")
-          end
+        def initialize(address:)
+          @address = address
+          @refs = []
+        end
 
+        def add(refs)
           if !refs.is_a?(Array)
             raise(MemoryError, "refs must be an array!")
           end
@@ -33,12 +31,22 @@ module H2gb
           end
           refs.each do |ref|
             if !ref.is_a?(Integer)
-              raise(MemoryError, "Each ref must be an integer!")
+              raise(MemoryError, "Each ref must be an integer! '%s' is a %s" % [ref.to_s(), ref.class.to_s()])
             end
           end
 
-          @address = address
-          @refs = refs.uniq().sort()
+          @refs = (@refs + refs).uniq().sort()
+        end
+
+        def delete(refs)
+          if !refs.is_a?(Array)
+            raise(MemoryError, "refs must be an array!")
+          end
+          if refs.length() == 0
+            raise(MemoryError, "refs must have at least one element!")
+          end
+
+          @refs = (@refs - refs).uniq().sort()
         end
 
         def to_s()
@@ -47,40 +55,51 @@ module H2gb
       end
 
       class MemoryRefs
-        def initialize()
+        def initialize(type:nil)
+          @type = type
           @refs = {}
           @xrefs = {}
         end
 
         def insert(address:, refs:)
-          if @refs[address]
-            raise(MemoryError, "Re-declaring references on an address")
+          if !address.is_a?(Integer)
+            raise(MemoryError, "address must be an integer!")
+          end
+          if address < 0
+            raise(MemoryError, "address must not be negative!")
           end
 
-          memory_ref = MemoryRef.new(address: address, refs: refs)
-          @refs[address] = memory_ref
+          if @refs[address].nil?
+            @refs[address] = MemoryRef.new(address: address)
+          end
+          @refs[address].add(refs)
+
           refs.each do |address_ref|
             @xrefs[address_ref] = @xrefs[address_ref] || []
-            @xrefs[address_ref] << memory_ref
+            @xrefs[address_ref] << @refs[address]
           end
 
-          return memory_ref.refs
+          return refs.uniq().sort()
         end
 
-        def delete(address:)
-          memory_ref = @refs.delete(address)
-          if memory_ref.nil?
+        def delete(address:, refs: nil)
+          if refs.nil?
+            refs = @refs[address]
+          end
+          if refs.nil?
             return []
           end
 
-          memory_ref.refs.each do |ref|
+          @refs[address].delete(refs)
+
+          refs.each do |ref|
             if @xrefs[ref].nil?
               raise(MemoryError, "A cross-reference is missing!")
             end
-            @xrefs[ref].delete(memory_ref)
+            @xrefs[ref].delete(ref)
           end
 
-          return memory_ref.refs
+          return refs.uniq().sort()
         end
 
         def get_refs(address:)

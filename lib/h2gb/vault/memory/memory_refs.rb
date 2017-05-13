@@ -61,26 +61,17 @@ module H2gb
             raise(MemoryError, "A cross-reference is missing!")
           end
 
-          if @refs[from].delete(to).nil?
+          from_index = @refs[from].find_index(to)
+          if from_index.nil?
             raise(MemoryError, "No such reference: 0x%x to 0x%x" % [from, to])
           end
-          if @xrefs[to].delete(from).nil?
+          @refs[from].delete_at(from_index)
+
+          to_index = @xrefs[to].find_index(from)
+          if to_index.nil?
             raise(MemoryError, "No such cross reference: 0x%x to 0x%x" % [from, to])
           end
-        end
-
-        def delete_all(from:)
-          if @refs[from].nil?
-            return
-          end
-
-          # Clone this, because we're going to be making changes to it
-          refs = @refs[from].clone()
-          refs.each do |ref|
-            delete(from: from, to: ref)
-          end
-
-          return refs
+          @xrefs[to].delete_at(to_index)
         end
 
         def get_refs(from:)

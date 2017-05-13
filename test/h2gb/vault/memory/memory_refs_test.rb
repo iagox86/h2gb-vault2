@@ -111,16 +111,16 @@ class H2gb::Vault::MemoryRefsTest < Test::Unit::TestCase
     end
   end
 
-  def test_delete_all()
+  def test_delete_only_one_when_there_are_duplicates()
     @memory_refs.insert(from: 0x0000, to: 0x0004)
-    @memory_refs.insert(from: 0x0000, to: 0x0008)
-    @memory_refs.insert(from: 0x0004, to: 0x0004)
+    @memory_refs.insert(from: 0x0000, to: 0x0004)
 
-    @memory_refs.delete_all(from: 0x0000)
+    assert_equal([0x0004, 0x0004], @memory_refs.get_refs(from: 0x0000))
+    assert_equal([0x0000, 0x0000], @memory_refs.get_xrefs(to: 0x0004))
 
-    assert_equal([], @memory_refs.get_refs(from: 0x0000))
-    assert_equal([], @memory_refs.get_xrefs(to: 0x0000))
-    assert_equal([0x0004], @memory_refs.get_xrefs(to: 0x0004))
-    assert_equal([], @memory_refs.get_xrefs(to: 0x0008))
+    @memory_refs.delete(from: 0x0000, to: 0x0004)
+
+    assert_equal([0x0004], @memory_refs.get_refs(from: 0x0000))
+    assert_equal([0x0000], @memory_refs.get_xrefs(to: 0x0004))
   end
 end

@@ -1,3 +1,5 @@
+# TODO: This is out of date
+
 memory/ is an abstraction of a binary or whatever that gets loaded into memory.
 
 The "public" class is [memory.rb](memory.rb), and the functions are documented

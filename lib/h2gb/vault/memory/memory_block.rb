@@ -19,12 +19,12 @@ module H2gb
 
         def initialize(raw:, revision:0)
           @raw = raw
-          @memory = {}
+          @entries = {}
           @last_revision = -1
-          @refs = {}
+          @memory_refs = {}
 
           @raw.bytes().each_with_index() do |_, index|
-            @memory[index] = {
+            @entries[index] = {
               revision: revision,
               entry: nil,
             }
@@ -43,77 +43,129 @@ module H2gb
         private
         def _poke_revision(address:, revision:)
           _check_revision(revision: revision)
-          @memory[address] = @memory[address] || {}
-          @memory[address][:revision] = revision
+          @entries[address] = @entries[address] || {}
+          @entries[address][:revision] = revision
         end
 
         public
-        def add_refs(address:, type:, refs:, revision:)
-          # Create the refs type if it doesn't exist
-          @refs[type] = @refs[type] || MemoryRefs.new(type: type)
+        def add_refs(type:, from:, tos:, revision:)
+          _check_revision(revision: revision)
 
-          refs.each do |ref|
-            _poke_revision(revision: revision, address: address)
-            @refs[type].insert(address: address, ref: ref)
+          # Make sure there's an entry (references have to be from an entry)
+          if get(address: from, define_by_default: false).nil?
+            raise(MemoryError, "Trying to create a ref from an undefined address!")
           end
-#          @refs[type].insert(address: entry.address, refs: refs).each() do |address|
-#            _poke_revision(revision: revision, address: address)
-#          end
+
+          # Create the refs type if it doesn't exist
+          @memory_refs[type] = @memory_refs[type] || MemoryRefs.new(type: type)
+
+          tos.each do |to|
+            @memory_refs[type].insert(from: from, to: to)
+            _poke_revision(revision: revision, address: to)
+          end
+          _poke_revision(revision: revision, address: from)
         end
 
         public
-        def insert(entry:, revision:, refs: nil)
+        def remove_refs(type:, from:, tos:, revision:)
+          # TODO: I don't think I should allow 'tos' to be nil here
+          _check_revision(revision: revision)
+
+          # Make sure there's an entry (references have to be from an entry)
+          if get(address: from, define_by_default: false).nil?
+            raise(MemoryError, "Trying to create a ref from an undefined address!")
+          end
+
+          if @memory_refs[type].nil?
+            raise(MemoryError, "No such reference type %s on address 0x%x" % [type, from])
+          end
+
+          if tos.nil?
+            tos = @memory_refs[type].delete_all(from: from)
+          else
+            tos.each() do |to|
+              @memory_refs[type].delete(from: from, to: to)
+            end
+          end
+
+          tos.each() do |to|
+            _poke_revision(revision: revision, address: to)
+          end
+          _poke_revision(revision: revision, address: from)
+        end
+
+        # TODO: I think I'm going to have to get rid of this, because it can't be undone / redone
+        public
+        def remove_all_refs(from:, revision:)
+          @memory_refs.each_key do |type|
+            remove_refs(type: type, from: from, tos: nil, revision: revision)
+          end
+        end
+
+        public
+        def get_refs(from:)
+          result = {}
+          @memory_refs.each_pair do |type, memory_refs|
+            refs = memory_refs.get_refs(from: from)
+            if refs.length > 0
+              result[type] = refs
+            end
+          end
+
+          return result
+        end
+
+        public
+        def get_xrefs(to:)
+          result = {}
+          @memory_refs.each_pair do |type, memory_refs|
+            xrefs = memory_refs.get_xrefs(to: to)
+            if xrefs.length > 0
+              result[type] = xrefs
+            end
+          end
+
+          return result
+        end
+
+        public
+        def define(entry:, revision:)
           _check_revision(revision: revision)
 
           # Validate before we start making changes
           entry.each_address() do |i|
-            if @memory[i].nil?
+            if @entries[i].nil?
               raise(MemoryError, "Tried to define an entry that's out of range")
             end
-            if @memory[i][:entry]
+            if @entries[i][:entry]
               raise(MemoryError, "Tried to re-define an entry")
             end
-          end
-          refs = refs || {}
-          if !refs.is_a?(Hash)
-            raise(MemoryError, "refs must be a hash (or nil)!")
           end
 
           # Define each address
           entry.each_address() do |i|
-            @memory[i] = {
+            @entries[i] = {
               revision: revision,
               entry: entry,
             }
           end
-
-          # Deal with references
-          refs.each_pair() do |type, ref_list|
-            add_refs(address: entry.address, type: type, refs: ref_list, revision: revision)
-          end
         end
 
-        def delete(entry:, revision:)
+        def undefine(entry:, revision:)
           _check_revision(revision: revision)
 
           # Validate before we start making changes
           entry.each_address() do |i|
-            if @memory[i][:entry].nil?
+            if @entries[i][:entry].nil?
               raise(MemoryError, "Tried to clear memory that's not in use")
             end
           end
 
           entry.each_address() do |i|
-            @memory[i] = {
+            @entries[i] = {
               revision: revision,
               entry: nil,
             }
-          end
-
-          @refs.each_pair do |type, memory_refs|
-            memory_refs.delete(address: entry.address).each() do |address|
-              _poke_revision(revision: revision, address: address)
-            end
           end
         end
 
@@ -127,83 +179,46 @@ module H2gb
           _poke_revision(revision: revision, address: entry.address)
         end
 
-        # TODO: I still need to do some re-thinking on how refs work, the
-        # other places are kludgy and this is just plain bleh
-        def add_reference(entry:, to:, type:, revision:)
-          entry.add_reference(to: to, type: type)
-
-          @refs[type] = @refs[type] || MemoryRefs.new(type: type)
-          @refs[type].insert(address: entry.address, refs: [to]).each() do |address|
-            _poke_revision(revision: revision, address: address)
-          end
-        end
-
-        def remove_reference(entry:, to:, type:, revision:)
-          entry.remove_reference(to: to, type: type)
-
-          @refs[type] = @refs[type] || MemoryRefs.new()
-          @refs[type].delete(address: entry.address, refs: [to]).each() do |address|
-            _poke_revision(revision: revision, address: address)
-          end
-        end
-
         def _get_raw(entry:)
           return @raw[entry.address, entry.length].bytes()
         end
 
         def _get_entry(address:, include_undefined: true)
-          if @memory[address].nil?
+          if @entries[address].nil?
             raise(MemoryError, "Tried to retrieve an entry outside of the range")
           end
-          entry = @memory[address][:entry]
+          entry = @entries[address][:entry]
 
           # Make sure that we always have an entry to work from
           if entry.nil?
             if !include_undefined
-              return nil, {}
+              return nil
             end
 
             entry = MemoryEntry.default(address: address, raw: @raw[address].ord())
           end
 
-          xrefs = {}
-          @refs.each_pair() do |type, memory_refs|
-            these_xrefs = memory_refs.get_xrefs(address: entry.address)
-
-            # Only add the element if there's more than one
-            if these_xrefs.length() > 0
-              xrefs[type] = memory_refs.get_xrefs(address: entry.address)
-            end
-          end
-
-          return entry, xrefs
+          return entry
         end
 
         def each_entry_in_range(address:, length:, since: 0, include_undefined: true)
           i = address
 
           while i < address + length
-            entry, xrefs = _get_entry(address: i, include_undefined: include_undefined)
-            if entry.nil? # TODO: I don't think this is necessary
-              i += 1
-              next
-            end
-            revision = @memory[i][:revision]
-
-            # Pre-compute the next value of i, in case we're deleting the memory
-            next_i = entry.address + entry.length
+            entry = _get_entry(address: i, include_undefined: include_undefined)
+            revision = @entries[i][:revision]
 
             if revision > since
-              yield(entry.address, entry, _get_raw(entry: entry), xrefs)
+              yield(entry.address, entry, _get_raw(entry: entry), get_refs(from: entry.address), get_xrefs(to: entry.address))
             end
 
-            i = next_i
+            i = entry.address + entry.length
           end
         end
 
         def each_entry(since: 0)
-          each_entry_in_range(address: 0, length: @raw.length, since: since) do |address, entry, raw, xrefs|
-            yield(address, entry, raw, xrefs)
+          each_entry_in_range(address: 0, length: @raw.length, since: since) do |address, entry, raw, refs, xrefs|
+            yield(address, entry, raw, refs, xrefs)
           end
         end
 
@@ -212,7 +227,7 @@ module H2gb
         end
 
         def to_s()
-          return @memory.to_s()
+          return @entries.to_s()
         end
       end
     end

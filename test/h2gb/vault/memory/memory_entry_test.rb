@@ -9,7 +9,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 10,
-      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )
@@ -26,37 +25,37 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 'hi', type: :type, value: "value", length: 10,
-        refs: {}, user_defined: {test: "hi"}, comment: "bye",
+        user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: -1, type: :type, value: "value", length: 10,
-        refs: {}, user_defined: {test: "hi"}, comment: "bye",
+        user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: [], value: "value", length: 10,
-        refs: {}, user_defined: {test: "hi"}, comment: "bye",
+        user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: :type, value: "value", length: "hi",
-        refs: {}, user_defined: {test: "hi"}, comment: "bye",
+        user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: :type, value: "value", length: 0,
-        refs: {}, user_defined: {test: "hi"}, comment: "bye",
+        user_defined: {test: "hi"}, comment: "bye",
       )
     end
     assert_raises(H2gb::Vault::Memory::MemoryError) do
       H2gb::Vault::Memory::MemoryEntry.new(
         address: 0x1234, type: :type, value: "value", length: 10,
-        refs: {}, user_defined: "hi", comment: "bye",
+        user_defined: "hi", comment: "bye",
       )
     end
   end
@@ -67,7 +66,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 1,
-      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )
@@ -86,7 +84,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 1,
-      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )
@@ -106,7 +103,6 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
       type: :type,
       value: "value",
       length: 0x0004,
-      refs: {},
       user_defined: {test: "hi"},
       comment: "bye",
     )
@@ -118,97 +114,5 @@ class H2gb::Vault::MemoryEntryTest < Test::Unit::TestCase
 
     expected = [0x1000, 0x1001, 0x1002, 0x1003]
     assert_equal(expected, addresses)
-  end
-
-  def test_duplicate_refs()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x1234,
-      type: :type,
-      value: "value",
-      length: 10,
-      refs: {code: [4, 0, 0]},
-      user_defined: {test: "hi"},
-      comment: "bye",
-    )
-
-    assert_equal({code: [0, 4]}, memory_entry.refs)
-  end
-
-  def test_add_reference()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x1234,
-      type: :type,
-      value: "value",
-      length: 10,
-      refs: {},
-      user_defined: {test: "hi"},
-      comment: "bye",
-    )
-    memory_entry.add_reference(to: 0x4321, type: :code)
-
-    assert_equal({code: [0x4321]}, memory_entry.refs)
-  end
-
-  def test_add_reference_when_type_already_exists()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x1234,
-      type: :type,
-      value: "value",
-      length: 10,
-      refs: {code: [0x0000, 0xFFFF]},
-      user_defined: {test: "hi"},
-      comment: "bye",
-    )
-    memory_entry.add_reference(to: 0x4321, type: :code)
-
-    assert_equal({code: [0x0000, 0x4321, 0xFFFF]}, memory_entry.refs)
-  end
-
-  def test_add_duplicate_reference()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x1234,
-      type: :type,
-      value: "value",
-      length: 10,
-      refs: {code: [0x0000, 0xFFFF]},
-      user_defined: {test: "hi"},
-      comment: "bye",
-    )
-    memory_entry.add_reference(to: 0x4321, type: :code)
-    memory_entry.add_reference(to: 0x0000, type: :code)
-    memory_entry.add_reference(to: 0xFFFF, type: :code)
-
-    assert_equal({code: [0x0000, 0x4321, 0xFFFF]}, memory_entry.refs)
-  end
-
-  def test_remove_reference()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x1234,
-      type: :type,
-      value: "value",
-      length: 10,
-      refs: {code: [0x0000, 0xFFFF]},
-      user_defined: {test: "hi"},
-      comment: "bye",
-    )
-    memory_entry.remove_reference(to: 0x0000, type: :code)
-
-    assert_equal({code: [0xFFFF]}, memory_entry.refs)
-  end
-
-  def test_remove_last_reference()
-    memory_entry = H2gb::Vault::Memory::MemoryEntry.new(
-      address: 0x1234,
-      type: :type,
-      value: "value",
-      length: 10,
-      refs: {code: [0x0000, 0xFFFF]},
-      user_defined: {test: "hi"},
-      comment: "bye",
-    )
-    memory_entry.remove_reference(to: 0x0000, type: :code)
-    memory_entry.remove_reference(to: 0xFFFF, type: :code)
-
-    assert_equal({}, memory_entry.refs)
   end
 end

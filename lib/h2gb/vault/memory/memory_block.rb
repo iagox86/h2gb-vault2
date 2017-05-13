@@ -48,7 +48,21 @@ module H2gb
         end
 
         public
-        def insert(entry:, revision:)
+        def add_refs(address:, type:, refs:, revision:)
+          # Create the refs type if it doesn't exist
+          @refs[type] = @refs[type] || MemoryRefs.new(type: type)
+
+          refs.each do |ref|
+            _poke_revision(revision: revision, address: address)
+            @refs[type].insert(address: address, ref: ref)
+          end
+#          @refs[type].insert(address: entry.address, refs: refs).each() do |address|
+#            _poke_revision(revision: revision, address: address)
+#          end
+        end
+
+        public
+        def insert(entry:, revision:, refs: nil)
           _check_revision(revision: revision)
 
           # Validate before we start making changes
@@ -60,6 +74,10 @@ module H2gb
               raise(MemoryError, "Tried to re-define an entry")
             end
           end
+          refs = refs || {}
+          if !refs.is_a?(Hash)
+            raise(MemoryError, "refs must be a hash (or nil)!")
+          end
 
           # Define each address
           entry.each_address() do |i|
@@ -70,16 +88,8 @@ module H2gb
           end
 
           # Deal with references
-          entry.refs.each_pair() do |type, refs|
-            # Create the refs type if it doesn't exist
-            @refs[type] = @refs[type] || MemoryRefs.new(type: type)
-
-            # This little loop is a little kludgy, but it's the best way I can think
-            # of to update the revision on the xrefs; if we don't do this, they
-            # won't show up
-            @refs[type].insert(address: entry.address, refs: refs).each() do |address|
-              _poke_revision(revision: revision, address: address)
-            end
+          refs.each_pair() do |type, ref_list|
+            add_refs(address: entry.address, type: type, refs: ref_list, revision: revision)
           end
         end
 

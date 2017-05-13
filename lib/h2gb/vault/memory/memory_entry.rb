@@ -15,9 +15,9 @@ module H2gb
   module Vault
     class Memory
       class MemoryEntry
-        attr_reader :address, :type, :value, :length, :refs, :user_defined, :comment
+        attr_reader :address, :type, :value, :length, :user_defined, :comment
 
-        def initialize(address:, type:, value:, length:, refs:, user_defined:, comment:)
+        def initialize(address:, type:, value:, length:, user_defined:, comment:)
           if !address.is_a?(Integer)
             raise(MemoryError, "address must be an integer!")
           end
@@ -39,10 +39,6 @@ module H2gb
             raise(MemoryError, "length must be at least zero!")
           end
 
-          if !refs.is_a?(Hash)
-            raise(MemoryError, "refs must be a hash!")
-          end
-
           if !user_defined.is_a?(Hash)
             raise(MemoryError, "user_defined must be a hash!")
           end
@@ -51,7 +47,6 @@ module H2gb
           @type = type
           @value = value
           @length = length
-          @refs = refs.map() { |ref_type, ref| [ref_type, ref.uniq().sort()] }.to_h()
 
           # Use the helper functions when they exist
           self.comment = comment
@@ -64,7 +59,6 @@ module H2gb
             type: :uint8_t,
             value: raw,
             length: 1,
-            refs: {},
             user_defined: {},
             comment: nil,
           )
@@ -87,43 +81,6 @@ module H2gb
         def each_address()
           @address.upto(@address + @length - 1) do |i|
             yield(i)
-          end
-        end
-
-        def add_reference(to:, type:)
-          if !to.is_a?(Integer)
-            raise(MemoryError, "references must be integers!")
-          end
-          if type.is_a?(String)
-            type = type.to_sym()
-          end
-          if !type.is_a?(Symbol)
-            raise(MemoryError, "reference types must be either Strings or Integers!")
-          end
-
-          @refs[type] = @refs[type] || []
-          @refs[type] = (@refs[type] + [to]).uniq().sort()
-        end
-
-        def remove_reference(to:, type:)
-          if !to.is_a?(Integer)
-            raise(MemoryError, "References must be integers!")
-          end
-          if type.is_a?(String)
-            type = type.to_sym()
-          end
-          if !type.is_a?(Symbol)
-            raise(MemoryError, "Reference types must be either Strings or Integers!")
-          end
-
-          # TODO: There might be trouble with de-duplication and undo/redo events..
-          # if you add the same ref twice then undo twice, the behaviour might get weird.
-          # I'm starting to think I maybe shouldn't de-dupe references
-          @refs[type].delete(to)
-
-          # Get rid of the type completely if it was the last one
-          if @refs[type].length == 0
-            @refs.delete(type)
           end
         end
 
@@ -157,7 +114,6 @@ module H2gb
             @type == other.type &&
             @value == other.value &&
             @length == other.length &&
-            @refs == other.refs &&
             @user_defined == other.user_defined
           )
         end

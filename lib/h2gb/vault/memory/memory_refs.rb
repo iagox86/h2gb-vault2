@@ -15,45 +15,6 @@ require 'h2gb/vault/memory/memory_error'
 module H2gb
   module Vault
     class Memory
-      class MemoryRef
-        attr_reader :address, :refs
-        def initialize(address:)
-          @address = address
-          @refs = []
-        end
-
-        def add(refs)
-          if !refs.is_a?(Array)
-            raise(MemoryError, "refs must be an array!")
-          end
-          if refs.length() == 0
-            raise(MemoryError, "refs must have at least one element!")
-          end
-          refs.each do |ref|
-            if !ref.is_a?(Integer)
-              raise(MemoryError, "Each ref must be an integer! '%s' is a %s" % [ref.to_s(), ref.class.to_s()])
-            end
-          end
-
-          @refs = (@refs + refs).uniq().sort()
-        end
-
-        def delete(refs)
-          if !refs.is_a?(Array)
-            raise(MemoryError, "refs must be an array!")
-          end
-          if refs.length() == 0
-            raise(MemoryError, "refs must have at least one element!")
-          end
-
-          @refs = (@refs - refs).uniq().sort()
-        end
-
-        def to_s()
-          return "0x%08x => %s" % [@address, @refs.map() { |ref| "0x%04" % ref }.join(', ')]
-        end
-      end
-
       class MemoryRefs
         def initialize(type:nil)
           @type = type
@@ -61,64 +22,85 @@ module H2gb
           @xrefs = {}
         end
 
-        def insert(address:, refs:)
-          if !address.is_a?(Integer)
-            raise(MemoryError, "address must be an integer!")
+        def insert(from:, to:)
+          if !from.is_a?(Integer)
+            raise(MemoryError, "from must be an integer!")
           end
-          if address < 0
-            raise(MemoryError, "address must not be negative!")
+          if from < 0
+            raise(MemoryError, "from must not be negative!")
           end
-
-          if @refs[address].nil?
-            @refs[address] = MemoryRef.new(address: address)
+          if !to.is_a?(Integer)
+            raise(MemoryError, "to must be an integer!")
           end
-          @refs[address].add(refs)
-
-          refs.each do |address_ref|
-            @xrefs[address_ref] = @xrefs[address_ref] || []
-            @xrefs[address_ref] << @refs[address]
+          if to < 0
+            raise(MemoryError, "to must not be negative!")
           end
 
-          return refs.uniq().sort()
+          @refs[from] = @refs[from] || []
+          @refs[from] << to
+
+          @xrefs[to] = @xrefs[to] || []
+          @xrefs[to] << from
         end
 
-        def delete(address:, refs: nil)
-          if refs.nil?
-            refs = @refs[address]
-          end
-          if refs.nil?
-            return []
+        def insert_all(from:, tos:)
+          if !tos.is_a?(Array)
+            raise(MemoryError, "tos must be an Array")
           end
 
-          @refs[address].delete(refs)
+          tos.each do |to|
+            insert(from: from, to: to)
+          end
+        end
 
+        def delete(from:, to:)
+          if @refs[from].nil?
+            raise(MemoryError, "No such reference: 0x%x" % from)
+          end
+          if @xrefs[to].nil?
+            raise(MemoryError, "A cross-reference is missing!")
+          end
+
+          if @refs[from].delete(to).nil?
+            raise(MemoryError, "No such reference: 0x%x to 0x%x" % [from, to])
+          end
+          if @xrefs[to].delete(from).nil?
+            raise(MemoryError, "No such cross reference: 0x%x to 0x%x" % [from, to])
+          end
+        end
+
+        def delete_all(from:)
+          if @refs[from].nil?
+            return
+          end
+
+          # Clone this, because we're going to be making changes to it
+          refs = @refs[from].clone()
           refs.each do |ref|
-            if @xrefs[ref].nil?
-              raise(MemoryError, "A cross-reference is missing!")
-            end
-            @xrefs[ref].delete(ref)
+            delete(from: from, to: ref)
           end
 
-          return refs.uniq().sort()
+          return refs
         end
 
-        def get_refs(address:)
-          if @refs[address].nil?
+        def get_refs(from:)
+          if @refs[from].nil?
             return []
           end
-          return @refs[address].refs
+
+          # Note: sort() implicitly clones this, which is what we want (so the
+          # caller doesn't mess with the array)
+          return @refs[from].sort()
         end
 
-        def get_xrefs(address:)
-          xrefs = @xrefs[address] || []
-          return (xrefs.map() { |xref| xref.address }).uniq().sort()
-        end
+        def get_xrefs(to:)
+          if @xrefs[to].nil?
+            return []
+          end
 
-        def to_s()
-          refs  = @refs.map()  { |ref|  ref.to_s }
-          xrefs = @xrefs.map() { |xref| xref.to_s }
-
-          return "Refs:\n%s\n\nXrefs:\n%s\n" % [refs, xrefs]
+          # Note: sort() implicitly clones this, which is what we want (so the
+          # caller doesn't mess with the array)
+          return @xrefs[to].sort()
         end
       end
     end

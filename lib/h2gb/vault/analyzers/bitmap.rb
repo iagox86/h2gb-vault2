@@ -51,8 +51,8 @@ module H2gb
         end
 
         # Validate the file size
-        file_size_entry = @memory.get_single(address: 0x0002)
-        if file_size_entry[:value] != @memory.raw.length()
+        file_size = @memory.get_value(address: 0x0002)
+        if file_size != @memory.raw.length()
           @updater.do([
             { action: :set_comment, address: 0x0000, comment: 'File size (invalid)' },
             { action: :update_user_defined, address: 0x0000, user_defined: { error: warning, error_text: "Doesn't match the file's actual size!" } },
@@ -60,8 +60,7 @@ module H2gb
         end
 
         # Different lengths mean a different pixel structure
-        dib_length_entry = @memory.get_single(address: 0x000e)
-        dib_length = dib_length_entry[:value]
+        dib_length = @memory.get_value(address: 0x000e)
 
         # TODO: Use this as an excuse to implement array, struct, and enum support
         if dib_length == 12
@@ -138,9 +137,9 @@ module H2gb
         end
 
         # Raw pixels
-        pixel_offset = @memory.get_single(address: 0x000a)[:value]
+        pixel_offset = @memory.get_value(address: 0x000a)
         # TODO: This hardcoded offset won't work if I implement other bitmap types
-        bits_per_pixel = @memory.get_single(address: 0x001c)[:value]
+        bits_per_pixel = @memory.get_value(address: 0x001c)
 
         if bits_per_pixel == 24
           updates = []

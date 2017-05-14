@@ -14,20 +14,28 @@
 {{/if}}
 
 <div style='padding-bottom: 6px' id='address-{{entry.address}}' {{action 'edit' entry on='doubleClick'}}>
-  {{#if entry.xrefs}}
+  {{#if data_xrefs}}
     {{#line-with-address address=entry.address}}
-      &nbsp;&nbsp;&nbsp;; XRef:
-      {{#each entry.xrefs as |xref|}}
-        {{memory-address address=xref}}
+      &nbsp;DATA Xrefs:
+      {{#each data_xrefs as |data_xref|}}
+        {{memory-address address=data_xref}}
+      {{/each}}
+    {{/line-with-address}}
+  {{/if}}
+  {{#if code_xrefs}}
+    {{#line-with-address address=entry.address}}
+      &nbsp;CODE Xrefs:
+      {{#each code_xrefs as |code_xref|}}
+        {{memory-address address=code_xref}}
       {{/each}}
     {{/line-with-address}}
   {{/if}}
 
   {{#line-with-address address=entry.address}}
     {{memory-raw raw=entry.raw}}
-    {{memory-value type=entry.data.type subtype=entry.data.subtype value=entry.data.value}}
-    {{#if entry.data.comment}}
-      ; {{entry.data.comment}}
+    {{memory-value type=entry.type value=entry.value}}
+    {{#if entry.comment}}
+      ; {{entry.comment}}
     {{/if}}
   {{/line-with-address}}
 </div>

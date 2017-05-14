@@ -88,7 +88,7 @@ get('/api/memories') do
   }
 end
 
-get('/api/memory/:id') do |id|
+get('/api/memories/:id') do |id|
   return {
     data: {
       type: 'memory',
@@ -98,7 +98,7 @@ get('/api/memory/:id') do |id|
   }
 end
 
-post('/api/memory/:id/update') do |id|
+post('/api/memories/:id/update') do |id|
   updater.do(@params['updates'])
 
   return {
@@ -106,7 +106,7 @@ post('/api/memory/:id/update') do |id|
   }
 end
 
-post('/api/memory/:id/undo') do |id|
+post('/api/memories/:id/undo') do |id|
   memory.undo()
 
   return {
@@ -114,7 +114,7 @@ post('/api/memory/:id/undo') do |id|
   }
 end
 
-post('/api/memory/:id/redo') do |id|
+post('/api/memories/:id/redo') do |id|
   memory.redo()
 
   return {

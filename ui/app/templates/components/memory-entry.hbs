@@ -33,7 +33,7 @@
 
   {{#line-with-address address=entry.address}}
     {{memory-raw raw=entry.raw}}
-    {{memory-value type=entry.type value=entry.value}}
+    {{memory-value type=entry.type value=entry.value user_defined=entry.user_defined}}
     {{#if entry.comment}}
       ; {{entry.comment}}
     {{/if}}

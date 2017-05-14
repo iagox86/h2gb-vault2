@@ -74,7 +74,10 @@ after('/api/*') do
 end
 
 options("*") do
-  response.headers["Allow"] = "HEAD,GET,PUT,POST,DELETE,OPTIONS"
+  headers("Allow" => "HEAD,GET,PUT,POST,DELETE,OPTIONS")
+  headers('Access-Control-Request-Method' => "POST")
+  headers('Access-Control-Allow-Headers' => "Content-Type")
+  headers('Access-Control-Allow-Origin' => '*')
   status(200)
 end
 

@@ -24,17 +24,18 @@ require 'h2gb/vault/api/error_handling'
 # TODO: We're loading a file automatically to save trouble, eventually I'll need
 # a better UI for this
 test_file = File.dirname(__FILE__) + '/data/test.bmp'
+
 memory = nil
 File.open(test_file, 'rb') do |f|
   memory = H2gb::Vault::Memory.new(raw: f.read())
 end
+
 analyzer = H2gb::Vault::BitmapAnalyzer.new(memory)
 analyzer.analyze()
 
+updater = H2gb::Vault::Updater.new(memory: memory)
+
 configure() do
-  # Enable cross-origin (TODO: Security implications, once that matters?)
-  enable(:cross_origin)
-  set(:allow_origin, :any)
   set(:allow_methods, [:get, :post, :put, :delete, :options])
 
   # Helpers for before
@@ -43,6 +44,7 @@ configure() do
       verbs.any?{|v| v == request.request_method }
     end
   end
+
   set(:not_accepted_verbs) do |*verbs|
     condition do
       !verbs.any?{|v| v == request.request_method }
@@ -51,14 +53,14 @@ configure() do
 end
 
 before do
-  content_type('application/vnd.api+json')
   headers('Access-Control-Allow-Origin' => '*')
+  content_type('application/vnd.api+json')
 end
 
 before(accepted_verbs: ['POST', 'PUT']) do
   begin
     @params = JSON.parse(request.body.read)
-  rescue Exception => e # TODO: Use the right exception
+  rescue JSON::ParserError=> e
     halt(400, puts("Invalid JSON: " + e.to_s() + " :: " + request.body.read))
   end
 end
@@ -73,59 +75,38 @@ end
 
 options("*") do
   response.headers["Allow"] = "HEAD,GET,PUT,POST,DELETE,OPTIONS"
-  response.headers["Access-Control-Allow-Headers"] = "X-Requested-With, X-HTTP-Method-Override, Content-Type, Cache-Control, Accept, Authorization"
   status(200)
 end
 
-get('/') do
-  return "Welcome to the h2gb-vault API! The requests are /api/*, you'll probably want to read the documentation :)"
-end
-
 get('/api/memories') do
-  data = memory.get_all()
-
   return {
     data: [{
       type: 'memory',
       id: '1',
-      attributes: data,
+      attributes: memory.get_all(),
     }]
   }
 end
 
-get('/api/memories/1') do
-  data = memory.get_all()
-
+get('/api/memory/:id') do |id|
   return {
     data: {
       type: 'memory',
-      id: '1',
-      attributes: data,
+      id: id,
+      attributes: memory.get_all(),
     }
   }
 end
 
-post('/api/edit_memory/1') do
-  puts(@params)
-  memory.transaction() do
-    memory.insert(
-      address: @params['address'],
-      length: @params['length'],
-      data: {
-        type: @params['type'],
-        value: @params['value'],
-        comment: @params['comment'],
-      },
-      refs: @params['refs'],
-    )
-  end
+post('/api/memory/:id/update') do |id|
+  updater.do(@params['updates'])
 
   return {
     'status': 200
   }
 end
 
-post('/api/undo/1') do
+post('/api/memory/:id/undo') do |id|
   memory.undo()
 
   return {
@@ -133,10 +114,14 @@ post('/api/undo/1') do
   }
 end
 
-post('/api/redo/1') do
+post('/api/memory/:id/redo') do |id|
   memory.redo()
 
   return {
     'status': 200
   }
+end
+
+get('/') do
+  return "Welcome to the h2gb-vault API! The requests are /api/*, you'll probably want to read the documentation :)"
 end

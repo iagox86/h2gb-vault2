@@ -22,7 +22,7 @@ module H2gb
       IN = :raw
       OUT = :parsed_bmp
 
-      def initialize(memory)
+      def initialize(memory) # TODO: Make this a named parameter to match the style elsewhere
         @memory = memory
         @updater = Updater.new(memory: @memory)
       end

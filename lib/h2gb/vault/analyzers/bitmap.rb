@@ -42,8 +42,8 @@ module H2gb
         ])
 
         # Validate fields in the bitmap header
-        header_entry = @memory.get_single(address: 0x0000)
-        if header_entry[:value] != 0x424d
+        header = @memory.get_value(address: 0x0000)
+        if header != 0x424d
           @updater.do([
             { action: :set_comment, address: 0x0000, comment: 'BMP header (invalid)' },
             { action: :update_user_defined, address: 0x0000, user_defined: { error: warning, error_text: 'Invalid BMP header' } },

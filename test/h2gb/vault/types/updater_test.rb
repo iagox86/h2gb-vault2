@@ -153,11 +153,58 @@ class H2gb::Vault::BasicTypesTest < Test::Unit::TestCase
   end
 
   def test_custom_type()
+    @updater.do([
+      { action: :define_custom_type, address: 0x0000, type: :custom_type, length: 4, value: "hi", options: { a: :b } }
+    ])
+
+    result = @memory.get_single(address: 0x0000)
+    expected = TestHelper.test_entry(address: 0x0000, type: :custom_type, value: "hi", length: 4, user_defined: {}, comment: nil, raw: "\x00\x01\x02\x03".bytes())
+    assert_equal(expected, result)
+
+    @updater.do([
+      { action: :define_custom_type, address: 0x0004, type: :custom_type, length: 4, value: "hi", options: { a: :b }, refs: { code: [0x0000] }}
+    ])
+
+    result = @memory.get_single(address: 0x0000)
+    expected = TestHelper.test_entry(address: 0x0000, type: :custom_type, value: "hi", length: 4, user_defined: {}, comment: nil, raw: "\x00\x01\x02\x03".bytes(), xrefs: { code: [0x0004] })
+    assert_equal(expected, result)
+
+    result = @memory.get_single(address: 0x0004)
+    expected = TestHelper.test_entry(address: 0x0004, type: :custom_type, value: "hi", length: 4, user_defined: {}, comment: nil, raw: "\x03\x02\x01\x00".bytes(), refs: { code: [0x0000] })
+    assert_equal(expected, result)
   end
 
   def test_replace_user_defined()
+    @updater.do([
+      { action: :define_basic_type, address: 0x0000, type: :uint16_t, options: { endian: :little }, user_defined: { display_hint: :hex } }
+    ])
+    @updater.do([
+      { action: :replace_user_defined, address: 0x0000, user_defined: { display_sign: :signed } }
+    ])
+
+    result = @memory.get_single(address: 0x0000)
+    expected = TestHelper.test_entry(address: 0x0000, type: :uint16_t, value: 0x0100, length: 2, user_defined: { display_sign: :signed }, comment: nil, raw: "\x00\x01".bytes())
+    assert_equal(expected, result)
   end
 
   def test_update_user_defined()
+    @updater.do([
+      { action: :define_basic_type, address: 0x0000, type: :uint16_t, options: { endian: :little }, user_defined: { display_hint: :hex } }
+    ])
+    @updater.do([
+      { action: :update_user_defined, address: 0x0000, user_defined: { display_sign: :signed } }
+    ])
+
+    result = @memory.get_single(address: 0x0000)
+    expected = TestHelper.test_entry(address: 0x0000, type: :uint16_t, value: 0x0100, length: 2, user_defined: { display_hint: :hex, display_sign: :signed }, comment: nil, raw: "\x00\x01".bytes())
+    assert_equal(expected, result)
+
+    @updater.do([
+      { action: :update_user_defined, address: 0x0000, user_defined: { display_hint: :decimal } }
+    ])
+
+    result = @memory.get_single(address: 0x0000)
+    expected = TestHelper.test_entry(address: 0x0000, type: :uint16_t, value: 0x0100, length: 2, user_defined: { display_hint: :decimal, display_sign: :signed }, comment: nil, raw: "\x00\x01".bytes())
+    assert_equal(expected, result)
   end
 end

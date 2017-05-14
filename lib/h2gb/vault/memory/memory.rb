@@ -168,7 +168,7 @@ module H2gb
           raise(MemoryError, "Calls to define() must be wrapped in a transaction!")
         end
         if !refs.is_a?(Hash)
-          raise(MemoryError, "refs must be a hash!")
+          raise(MemoryError, "refs must be a Hash!")
         end
         refs.each_pair do |ref_type, tos|
           if !ref_type.is_a?(String) && !ref_type.is_a?(Symbol)

@@ -44,12 +44,11 @@ module H2gb
         if !item[:action].is_a?(Symbol)
           raise MemoryError("action must be a String or Symbol")
         end
+        _validate_address(address: item[:address])
 
         # Do the action
         case item[:action]
         when :define_basic_type
-          _validate_address(address: item[:address])
-
           _define_basic_type(item: item)
 
           # Apply a comment if one exists
@@ -61,19 +60,20 @@ module H2gb
           if item[:user_defined]
             @memory.replace_user_defined(address: item[:address], user_defined: item[:user_defined])
           end
+        when :define_custom_type
+          @memory.define(address: item[:address], type: item[:type], value: item[:value], length: item[:length], refs: item[:refs] || {}, user_defined: item[:user_defined] || {}, comment: item[:comment])
+        when :undefine
+          @memory.undefine(address: item[:address], length: item[:length])
         when :set_comment
-          _validate_address(address: item[:address])
           @memory.set_comment(address: item[:address], comment: item[:comment])
-          _validate_address(address: item[:address])
+        when :replace_user_defined
+          @memory.replace_user_defined(address: item[:address], user_defined: item[:user_defined])
+        when :update_user_defined
+          @memory.update_user_defined(address: item[:address], user_defined: item[:user_defined])
         when :add_refs
-          _validate_address(address: item[:address])
           @memory.add_refs(type: item[:type], from: item[:address], tos: item[:tos])
         when :remove_refs
-          _validate_address(address: item[:address])
           @memory.remove_refs(type: item[:type], from: item[:address], tos: item[:tos])
-        when :undefine
-          _validate_address(address: item[:address])
-          @memory.undefine(address: item[:address], length: item[:length])
         else
           # TODO: This raise isn't working, but I plan to move MemoryError anyways
           raise H2gb::Vault::Memory::MemoryError("Unknown action: %s" % item[:action])

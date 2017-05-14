@@ -31,8 +31,8 @@ module H2gb
       SET_COMMENT_FORWARD = :set_comment_forward
       SET_COMMENT_BACKWARD = :set_comment_backward
 
-      ADD_REFERENCE = :add_reference
-      REMOVE_REFERENCE = :remove_reference
+      ADD_REFS = :add_refs
+      REMOVE_REFS = :remove_refs
 
       public
       def initialize(raw:)
@@ -47,15 +47,12 @@ module H2gb
           SET_COMMENT_FORWARD => SET_COMMENT_BACKWARD,
           SET_COMMENT_BACKWARD => SET_COMMENT_FORWARD,
 
-          ADD_REFERENCE => REMOVE_REFERENCE,
-          REMOVE_REFERENCE => ADD_REFERENCE,
+          ADD_REFS => REMOVE_REFS,
+          REMOVE_REFS => ADD_REFS,
         })
         @in_transaction = false
 
-        @refs = {
-          code: MemoryRefs.new(),
-          data: MemoryRefs.new(),
-        }
+        @refs = {}
 
         @mutex = Mutex.new()
       end
@@ -73,17 +70,25 @@ module H2gb
           @transactions.increment()
           yield
 
+          # TODO: Catch errors properly so we don't wind up in a bad state here
+
           @in_transaction = false
         end
       end
 
       private
       def _define_internal(entry:)
-        @memory_block.each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw|
+        @memory_block.each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw, refs, xrefs|
+          # Remove refs from the address
+          refs.each_pair do |type, tos|
+            _remove_refs_internal(type: type, from: this_address, tos: tos)
+          end
+
+          # Remove any entry
           _undefine_internal(entry: this_entry)
         end
 
-        @memory_block.insert(entry: entry, revision: @transactions.revision)
+        @memory_block.define(entry: entry, revision: @transactions.revision)
 
         @transactions.add_to_current_transaction(type: ENTRY_DEFINE, entry: entry)
       end
@@ -91,7 +96,7 @@ module H2gb
       private
       def _undefine_internal(entry:)
         @transactions.add_to_current_transaction(type: ENTRY_UNDEFINE, entry: entry)
-        @memory_block.delete(entry: entry, revision: @transactions.revision)
+        @memory_block.undefine(entry: entry, revision: @transactions.revision)
       end
 
       private
@@ -115,23 +120,23 @@ module H2gb
       end
 
       private
-      def _add_reference_internal(entry:, to:, type:)
-        @transactions.add_to_current_transaction(type: ADD_REFERENCE, entry: {
-          entry: entry,
-          to: to,
+      def _add_refs_internal(type:, from:, tos:)
+        @transactions.add_to_current_transaction(type: ADD_REFS, entry: {
           type: type,
+          from: from,
+          tos:  tos,
         })
-        @memory_block.add_reference(entry: entry, to: to, type: type)
+        @memory_block.add_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
       end
 
       private
-      def _remove_reference_internal(entry:, to:, type:)
-        @transactions.add_to_current_transaction(type: REMOVE_REFERENCE, entry: {
-          entry: entry,
-          to: to,
+      def _remove_refs_internal(type:, from:, tos:)
+        @transactions.add_to_current_transaction(type: REMOVE_REFS, entry: {
           type: type,
+          from: from,
+          tos:  tos,
         })
-        @memory_block.remove_reference(entry: entry, to: to, type: type)
+        @memory_block.remove_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
       end
 
       private
@@ -148,10 +153,10 @@ module H2gb
           _set_comment_internal(entry: entry[:entry], new_comment: entry[:new_comment])
         elsif action == SET_COMMENT_BACKWARD
           _set_comment_internal(entry: entry[:entry], new_comment: entry[:old_comment])
-        elsif action == ADD_REFERENCE
-          _add_reference_internal(entry: entry[:entry], to: entry[:to], type: entry[:type])
-        elsif action == REMOVE_REFERENCE
-          _remove_reference_internal(entry: entry[:entry], to: entry[:to], type: entry[:type])
+        elsif action == ADD_REFS
+          _add_refs_internal(type: entry[:type], from: entry[:from], tos: entry[:tos])
+        elsif action == REMOVE_REFS
+          _remove_refs_internal(type: entry[:type], from: entry[:from], tos: entry[:tos])
         else
           raise(MemoryError, "Unknown revision action: %s" % action)
         end
@@ -159,12 +164,31 @@ module H2gb
 
       public
       def define(address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
-        if not @in_transaction
+        if !@in_transaction
           raise(MemoryError, "Calls to define() must be wrapped in a transaction!")
         end
+        if !refs.is_a?(Hash)
+          raise(MemoryError, "refs must be a hash!")
+        end
+        refs.each_pair do |ref_type, tos|
+          if !ref_type.is_a?(String) && !ref_type.is_a?(Symbol)
+            raise(MemoryError, "refs' keys must be either strings or symbols")
+          end
+          if !tos.is_a?(Array)
+            raise(MemoryError, "refs' values must be arrays")
+          end
+          tos.each do |ref|
+            if !ref.is_a?(Integer)
+              raise(MemoryError, "refs' values must be arrays of integers")
+            end
+          end
+        end
 
-        entry = MemoryEntry.new(address: address, type: type, value: value, length: length, refs: refs, user_defined: user_defined, comment: comment)
+        entry = MemoryEntry.new(address: address, type: type, value: value, length: length, user_defined: user_defined, comment: comment)
         _define_internal(entry: entry)
+        refs.each_pair do |ref_type, tos|
+          _add_refs_internal(type: ref_type, from: address, tos: tos)
+        end
       end
 
       public
@@ -173,7 +197,10 @@ module H2gb
           raise(MemoryError, "Calls to undefine() must be wrapped in a transaction!")
         end
 
-        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw|
+        @memory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
+          refs.each_pair do |type, tos|
+            _remove_refs_internal(type: type, from: this_address, tos: tos)
+          end
           _undefine_internal(entry: entry)
         end
       end
@@ -239,23 +266,23 @@ module H2gb
       end
 
       public
-      def add_reference(address:, to:, type:)
+      def add_refs(type:, from:, tos:)
         if not @in_transaction
           raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
         end
 
-        entry = _get_or_define_entry(address: address)
-        _add_reference_internal(entry: entry, to: to, type: type)
+        _get_or_define_entry(address: from)
+        _add_refs_internal(type: type, from: from, tos: tos)
       end
 
       public
-      def remove_reference(address:, to:, type:)
+      def remove_refs(type:, from:, tos:)
         if not @in_transaction
           raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
         end
 
-        entry = _get_or_define_entry(address: address)
-        _remove_reference_internal(entry: entry, to: to, type: type)
+        _get_or_define_entry(address: from)
+        _remove_refs_internal(type: type, from: from, tos: tos)
       end
 
       public
@@ -266,17 +293,17 @@ module H2gb
             entries: [],
           }
 
-          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, xrefs|
+          @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, refs, xrefs|
 
             result[:entries] << {
               address:      this_address,
               type:         entry.type,
               value:        entry.value,
               length:       entry.length,
-              refs:         entry.refs,
               user_defined: entry.user_defined,
               comment:      entry.comment,
               raw:          raw,
+              refs:         refs,
               xrefs:        xrefs,
             }
           end

@@ -3,7 +3,7 @@ require 'test_helper'
 
 require 'h2gb/vault/types/basic_types'
 
-MEMORY = "\x00\x01\x02\x03\x03\x02\x01\x00ABCDEFGH\0ABCDEFGH"
+#MEMORY = "\x00\x01\x02\x03\x03\x02\x01\x00ABCDEFGH\0ABCDEFGH"
 
 #class H2gb::Vault::BasicTypesTest < Test::Unit::TestCase
 #  def setup()

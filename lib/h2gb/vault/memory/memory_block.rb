@@ -73,7 +73,7 @@ module H2gb
 
           # Make sure there's an entry (references have to be from an entry)
           if get(address: from, define_by_default: false).nil?
-            raise(MemoryError, "Trying to create a ref from an undefined address!")
+            raise(MemoryError, "Trying to remove a ref from an undefined address!")
           end
 
           if @memory_refs[type].nil?
@@ -92,14 +92,6 @@ module H2gb
             _poke_revision(revision: revision, address: to)
           end
           _poke_revision(revision: revision, address: from)
-        end
-
-        # TODO: I think I'm going to have to get rid of this, because it can't be undone / redone
-        public
-        def remove_all_refs(from:, revision:)
-          @memory_refs.each_key do |type|
-            remove_refs(type: type, from: from, tos: nil, revision: revision)
-          end
         end
 
         public
@@ -206,6 +198,12 @@ module H2gb
 
           while i < address + length
             entry = _get_entry(address: i, include_undefined: include_undefined)
+
+            if entry.nil?
+              i += 1
+              next
+            end
+
             revision = @entries[i][:revision]
 
             if revision > since

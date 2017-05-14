@@ -488,4 +488,33 @@ class H2gb::Vault::MemoryBlockTest < Test::Unit::TestCase
       @memory_block.remove_refs(type: :data, from: 0x0000, tos: [0x0004], revision: 1)
     end
   end
+
+  def test_each_entry_in_range_no_undefined()
+    test_entry = TestHelper.test_memory_entry(address: 0x0000, length: 0x0004)
+    @memory_block.define(entry: test_entry, revision: 1)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0008, since: -1, include_undefined: true) do |address, entry, raw, refs, xrefs|
+      results << { address: address, entry: entry }
+    end
+
+    expected = [
+      { address: 0x0000, entry: TestHelper.test_memory_entry(address: 0x0000, length: 0x0004) },
+      { address: 0x0004, entry: TestHelper.test_memory_entry_deleted(address: 0x0004) },
+      { address: 0x0005, entry: TestHelper.test_memory_entry_deleted(address: 0x0005) },
+      { address: 0x0006, entry: TestHelper.test_memory_entry_deleted(address: 0x0006) },
+      { address: 0x0007, entry: TestHelper.test_memory_entry_deleted(address: 0x0007) },
+    ]
+    assert_equal(expected, results)
+
+    results = []
+    @memory_block.each_entry_in_range(address: 0x0000, length: 0x0008, since: -1, include_undefined: false) do |address, entry, raw, refs, xrefs|
+      results << { address: address, entry: entry }
+    end
+
+    expected = [
+      { address: 0x0000, entry: TestHelper.test_memory_entry(address: 0x0000, length: 0x0004) },
+    ]
+    assert_equal(expected, results)
+  end
 end

@@ -5,7 +5,7 @@ require 'h2gb/vault/memory/memory'
 # Generate a nice simple test memory map
 RAW = (0..255).to_a().map() { |b| b.chr() }.join()
 
-def _test_define(memory:, address:, type: :type, value: "value", length:, refs: {}, user_defined: { test: 'hi' }, comment: 'bye', do_transaction: true)
+def _test_define(memory:, address:, type: :type, value: "value", length:, refs: {}, user_defined: {}, comment: nil, do_transaction: true)
   if do_transaction
     memory.transaction() do
       memory.define(
@@ -324,10 +324,10 @@ class H2gb::Vault::InsertTest < Test::Unit::TestCase
   end
 end
 
-###
-## Since we already use transactions throughout other tests, this will simply
-## ensure that transactions are required.
-###
+##
+# Since we already use transactions throughout other tests, this will simply
+# ensure that transactions are required.
+##
 class H2gb::Vault::TransactionTest < Test::Unit::TestCase
   def setup()
     @memory = H2gb::Vault::Memory.new(raw: RAW)
@@ -1588,8 +1588,8 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
     expected = {
       revision: 0x02,
       entries: [
-        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
-        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0002]} ),
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004, 0x0004]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0000, 0x0002]} ),
       ]
     }
     assert_equal(expected, result)
@@ -1639,6 +1639,22 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
       entries: [
         TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0000] }, xrefs: { code: [0x0000]} ),
         TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0005] }, xrefs: {} ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_overwrite_self_ref()
+    _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0000]})
+    _test_define(memory: @memory, address: 0x0002, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0002]})
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x02,
+      entries: [
+        TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
+        TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
+        TestHelper.test_entry(address: 0x0002, length: 0x04, raw: "\x02\x03\x04\x05".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0002] }, xrefs: { code: [0x0002]} ),
       ]
     }
     assert_equal(expected, result)
@@ -1946,6 +1962,42 @@ class H2gb::Vault::XrefsTest < Test::Unit::TestCase
         TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
         TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
         TestHelper.test_entry_deleted(address: 0x000a, raw: "\x0a".bytes(), xrefs: { code: [0x0005] }),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_add_refs()
+   _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+   _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
+   @memory.transaction do
+     @memory.add_refs(type: :code, from: 0x0004, tos: [0x0000])
+   end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000]} ),
+      ]
+    }
+    assert_equal(expected, result)
+  end
+
+  def test_remove_refs()
+   _test_define(memory: @memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+   _test_define(memory: @memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0000]} )
+   @memory.transaction do
+     @memory.remove_refs(type: :code, from: 0x0004, tos: [0x0000])
+   end
+
+    result = @memory.get(address: 0x00, length: 0xFF, since: 0)
+    expected = {
+      revision: 0x03,
+      entries: [
+        TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {} ),
+        TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {} ),
       ]
     }
     assert_equal(expected, result)

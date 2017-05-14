@@ -8,8 +8,8 @@
 # Works on the Memory class to define basic types.
 ##
 
+require 'h2gb/vault/error'
 require 'h2gb/vault/memory/memory'
-require 'h2gb/vault/memory/memory_error'
 
 module H2gb
   module Vault
@@ -111,7 +111,7 @@ module H2gb
         else
           # TODO: This exception isn't working, but I plan to replace it anyways
           puts item
-          raise H2gb::Vault::Memory::MemoryError("Unknown type: %s" % item[:type])
+          raise Error("Unknown type: %s" % item[:type])
         end
       end
     end

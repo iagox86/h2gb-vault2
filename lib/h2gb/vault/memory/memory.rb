@@ -11,9 +11,9 @@
 
 require 'yaml'
 
+require 'h2gb/vault/error'
 require 'h2gb/vault/memory/memory_block'
 require 'h2gb/vault/memory/memory_entry'
-require 'h2gb/vault/memory/memory_error'
 require 'h2gb/vault/memory/memory_refs'
 require 'h2gb/vault/memory/memory_transaction'
 
@@ -158,28 +158,28 @@ module H2gb
         elsif action == REMOVE_REFS
           _remove_refs_internal(type: entry[:type], from: entry[:from], tos: entry[:tos])
         else
-          raise(MemoryError, "Unknown revision action: %s" % action)
+          raise(Error, "Unknown revision action: %s" % action)
         end
       end
 
       public
       def define(address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
         if !@in_transaction
-          raise(MemoryError, "Calls to define() must be wrapped in a transaction!")
+          raise(Error, "Calls to define() must be wrapped in a transaction!")
         end
         if !refs.is_a?(Hash)
-          raise(MemoryError, "refs must be a Hash!")
+          raise(Error, "refs must be a Hash!")
         end
         refs.each_pair do |ref_type, tos|
           if !ref_type.is_a?(String) && !ref_type.is_a?(Symbol)
-            raise(MemoryError, "refs' keys must be either strings or symbols")
+            raise(Error, "refs' keys must be either strings or symbols")
           end
           if !tos.is_a?(Array)
-            raise(MemoryError, "refs' values must be arrays")
+            raise(Error, "refs' values must be arrays")
           end
           tos.each do |ref|
             if !ref.is_a?(Integer)
-              raise(MemoryError, "refs' values must be arrays of integers")
+              raise(Error, "refs' values must be arrays of integers")
             end
           end
         end
@@ -194,7 +194,7 @@ module H2gb
       public
       def undefine(address:, length:1)
         if not @in_transaction
-          raise(MemoryError, "Calls to undefine() must be wrapped in a transaction!")
+          raise(Error, "Calls to undefine() must be wrapped in a transaction!")
         end
 
         @memory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
@@ -218,7 +218,7 @@ module H2gb
       public
       def replace_user_defined(address:, user_defined:)
         if not @in_transaction
-          raise(MemoryError, "Calls to replace_user_defined() must be wrapped in a transaction!")
+          raise(Error, "Calls to replace_user_defined() must be wrapped in a transaction!")
         end
 
         entry, _ = @memory_block.get(address: address, define_by_default: false)
@@ -248,7 +248,7 @@ module H2gb
       public
       def update_user_defined(address:, user_defined:)
         if not @in_transaction
-          raise(MemoryError, "Calls to update_user_defined() must be wrapped in a transaction!")
+          raise(Error, "Calls to update_user_defined() must be wrapped in a transaction!")
         end
 
         entry = _get_or_define_entry(address: address)
@@ -258,7 +258,7 @@ module H2gb
       public
       def set_comment(address:, comment:)
         if not @in_transaction
-          raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
+          raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
         end
 
         entry = _get_or_define_entry(address: address)
@@ -268,7 +268,7 @@ module H2gb
       public
       def add_refs(type:, from:, tos:)
         if not @in_transaction
-          raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
+          raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
         end
 
         _get_or_define_entry(address: from)
@@ -278,7 +278,7 @@ module H2gb
       public
       def remove_refs(type:, from:, tos:)
         if not @in_transaction
-          raise(MemoryError, "Calls to set_comment() must be wrapped in a transaction!")
+          raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
         end
 
         _get_or_define_entry(address: from)
@@ -376,7 +376,7 @@ module H2gb
         memory = YAML::load(str)
 
         if memory.class != Memory
-          raise(MemoryError, "Couldn't load the file")
+          raise(Error, "Couldn't load the file")
         end
 
         return memory

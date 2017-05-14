@@ -9,6 +9,7 @@
 # data.
 ##
 
+require 'h2gb/vault/error'
 require 'h2gb/vault/memory/memory_refs'
 
 module H2gb
@@ -35,7 +36,7 @@ module H2gb
         def _check_revision(revision:)
           # Make sure the revision can never decrement, or weird stuff will happen
           if revision < @last_revision
-            raise(MemoryError, "Tried to use a lower revision!")
+            raise(Error, "Tried to use a lower revision!")
           end
           @last_revision = revision
         end
@@ -53,7 +54,7 @@ module H2gb
 
           # Make sure there's an entry (references have to be from an entry)
           if get(address: from, define_by_default: false).nil?
-            raise(MemoryError, "Trying to create a ref from an undefined address!")
+            raise(Error, "Trying to create a ref from an undefined address!")
           end
 
           # Create the refs type if it doesn't exist
@@ -73,11 +74,11 @@ module H2gb
 
           # Make sure there's an entry (references have to be from an entry)
           if get(address: from, define_by_default: false).nil?
-            raise(MemoryError, "Trying to remove a ref from an undefined address!")
+            raise(Error, "Trying to remove a ref from an undefined address!")
           end
 
           if @memory_refs[type].nil?
-            raise(MemoryError, "No such reference type %s on address 0x%x" % [type, from])
+            raise(Error, "No such reference type %s on address 0x%x" % [type, from])
           end
 
           if tos.nil?
@@ -127,10 +128,10 @@ module H2gb
           # Validate before we start making changes
           entry.each_address() do |i|
             if @entries[i].nil?
-              raise(MemoryError, "Tried to define an entry that's out of range")
+              raise(Error, "Tried to define an entry that's out of range")
             end
             if @entries[i][:entry]
-              raise(MemoryError, "Tried to re-define an entry")
+              raise(Error, "Tried to re-define an entry")
             end
           end
 
@@ -149,7 +150,7 @@ module H2gb
           # Validate before we start making changes
           entry.each_address() do |i|
             if @entries[i][:entry].nil?
-              raise(MemoryError, "Tried to clear memory that's not in use")
+              raise(Error, "Tried to clear memory that's not in use")
             end
           end
 
@@ -177,7 +178,7 @@ module H2gb
 
         def _get_entry(address:, include_undefined: true)
           if @entries[address].nil?
-            raise(MemoryError, "Tried to retrieve an entry outside of the range")
+            raise(Error, "Tried to retrieve an entry outside of the range")
           end
           entry = @entries[address][:entry]
 

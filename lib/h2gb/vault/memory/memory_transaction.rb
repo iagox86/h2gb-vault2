@@ -7,6 +7,9 @@
 #
 # Represents a series of undo-able and redo-able transactions.
 ##
+
+require 'h2gb/vault/error'
+
 module H2gb
   module Vault
     class Memory
@@ -68,7 +71,7 @@ module H2gb
           @revisions[undo_revision][:entries].reverse().each do |forward_entry|
             type = @opposites[forward_entry[:type]]
             if type.nil?
-              raise(MemoryError, "Unknown revision type: %s" % forward_entry[:type])
+              raise(Error, "Unknown revision type: %s" % forward_entry[:type])
             end
 
             yield(type, forward_entry[:entry])

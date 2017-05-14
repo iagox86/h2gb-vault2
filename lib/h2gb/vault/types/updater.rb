@@ -6,8 +6,8 @@
 # See LICENSE.md
 ##
 
+require 'h2gb/vault/error'
 require 'h2gb/vault/memory/memory'
-require 'h2gb/vault/memory/memory_error'
 require 'h2gb/vault/types/basic_types'
 
 module H2gb
@@ -22,10 +22,10 @@ module H2gb
       private
       def _sanity_check(address:, length:)
         if address < 0
-          raise(H2gb::Vault::Memory::MemoryError, "address must be positive")
+          raise(Error, "address must be positive")
         end
         if address + length > @memory.raw.length
-          raise(H2gb::Vault::Memory::MemoryError, "definition would go outside of memory")
+          raise(Error, "definition would go outside of memory")
         end
       end
 
@@ -78,7 +78,7 @@ module H2gb
           #TODO @memory.set_metadata(key: item[:key], value: item[:value])
         else
           # TODO: This raise isn't working, but I plan to move MemoryError anyways
-          raise H2gb::Vault::Memory::MemoryError("Unknown action: %s" % item[:action])
+          raise Error("Unknown action: %s" % item[:action])
         end
       end
 

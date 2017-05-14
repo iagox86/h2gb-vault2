@@ -9,7 +9,7 @@
 # out cleaned it up.
 ##
 
-require 'h2gb/vault/memory/memory_error'
+require 'h2gb/vault/error'
 
 module H2gb
   module Vault
@@ -19,28 +19,28 @@ module H2gb
 
         def initialize(address:, type:, value:, length:, user_defined:, comment:)
           if !address.is_a?(Integer)
-            raise(MemoryError, "address must be an integer!")
+            raise(Error, "address must be an integer!")
           end
           if address < 0
-            raise(MemoryError, "address must not be negative!")
+            raise(Error, "address must not be negative!")
           end
 
           if type.is_a?(String)
             type = type.to_sym()
           end
           if !type.is_a?(Symbol)
-            raise(MemoryError, "type must be a string or symbol!")
+            raise(Error, "type must be a string or symbol!")
           end
 
           if !length.is_a?(Integer)
-            raise(MemoryError, "length must be an integer!")
+            raise(Error, "length must be an integer!")
           end
           if length < 1
-            raise(MemoryError, "length must be at least zero!")
+            raise(Error, "length must be at least zero!")
           end
 
           if !user_defined.is_a?(Hash)
-            raise(MemoryError, "user_defined must be a hash!")
+            raise(Error, "user_defined must be a hash!")
           end
 
           @address = address
@@ -66,14 +66,14 @@ module H2gb
 
         def user_defined=(new_user_defined)
           if !new_user_defined.is_a?(Hash)
-            raise(MemoryError, "user_defined must be a hash!")
+            raise(Error, "user_defined must be a hash!")
           end
           @user_defined = new_user_defined
         end
 
         def comment=(new_comment)
           if !new_comment.is_a?(String) && !new_comment.nil?
-            raise(MemoryError, "user_defined must be a string or nil!")
+            raise(Error, "user_defined must be a string or nil!")
           end
           @comment = new_comment
         end

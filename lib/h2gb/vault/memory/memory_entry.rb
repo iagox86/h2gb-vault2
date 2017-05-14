@@ -110,6 +110,7 @@ module H2gb
 
         def ==(other)
           return (
+            self.class == other.class &&
             @address == other.address &&
             @type == other.type &&
             @value == other.value &&

@@ -74,6 +74,8 @@ module H2gb
           @memory.add_refs(type: item[:type], from: item[:address], tos: item[:tos])
         when :remove_refs
           @memory.remove_refs(type: item[:type], from: item[:address], tos: item[:tos])
+        when :set_metadata
+          #TODO @memory.set_metadata(key: item[:key], value: item[:value])
         else
           # TODO: This raise isn't working, but I plan to move MemoryError anyways
           raise H2gb::Vault::Memory::MemoryError("Unknown action: %s" % item[:action])

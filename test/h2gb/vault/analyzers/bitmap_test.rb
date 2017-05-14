@@ -3,179 +3,76 @@ require 'test_helper'
 
 require 'h2gb/vault/analyzers/bitmap'
 
-#class H2gb::Vault::RealBmpTest < Test::Unit::TestCase
-#  def setup()
-#    test_file = File.dirname(__FILE__) + '/data/test.bmp'
-#    File.open(test_file, 'rb') do |f|
-#      @memory = H2gb::Vault::Memory.new(raw: f.read())
-#    end
-#    @analyzer = H2gb::Vault::BitmapAnalyzer.new(@memory)
-#    @analyzer.analyze()
-#  end
-#
-#  def test_parsing()
-#    header_entry = @memory.get(address: 0x00)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x00,
-#        data: {
-#          comment: "Bitmap header",
-#          type: :uint16_t,
-#          value: 0x424d
-#        },
-#        length: 0x02,
-#        refs: [],
-#        raw: [?B.ord, ?M.ord],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, header_entry)
-#
-#    length_entry = @memory.get(address: 0x02)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x02,
-#        data: {
-#          comment: "File size (valid)",
-#          type: :uint32_t,
-#          value: 0xaa
-#        },
-#        length: 0x04,
-#        refs: [],
-#        raw: [0xaa, 0x00, 0x00, 0x00],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, length_entry)
-#
-#    reserved1_entry = @memory.get(address: 0x06)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x06,
-#        data: {
-#          comment: "Reserved",
-#          type: :uint16_t,
-#          value: 0x00
-#        },
-#        length: 2,
-#        refs: [],
-#        raw: [0x00, 0x00],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, reserved1_entry)
-#
-#    reserved2_entry = @memory.get(address: 0x08)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x08,
-#        data: {
-#          comment: "Reserved",
-#          type: :uint16_t,
-#          value: 0x00
-#        },
-#        length: 2,
-#        refs: [],
-#        raw: [0x00, 0x00],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, reserved2_entry)
-#
+class H2gb::Vault::RealBmpTest < Test::Unit::TestCase
+  def test_parsing()
+    test_file = File.dirname(__FILE__) + '/data/test.bmp'
+    File.open(test_file, 'rb') do |f|
+      @memory = H2gb::Vault::Memory.new(raw: f.read())
+    end
+    @analyzer = H2gb::Vault::BitmapAnalyzer.new(@memory)
+    @analyzer.analyze()
+
+    header = @memory[0x0000]
+    expected = TestHelper.test_entry(address: 0x0000, type: :uint16_t, value: 0x424d, length: 2, user_defined: { display_hint: :string }, comment: "BMP header", raw: "BM".bytes())
+    assert_equal(expected, header)
+
+    length = @memory[0x0002]
+    expected = TestHelper.test_entry(address: 0x0002, type: :uint32_t, value: 0x000000aa, length: 4, user_defined: {}, comment: "File size", raw: "\xaa\x00\x00\x00".bytes())
+    assert_equal(expected, length)
+
+    reserved1 = @memory[0x0006]
+    expected = TestHelper.test_entry(address: 0x0006, type: :uint16_t, value: 0x0000, length: 2, user_defined: {}, comment: "Reserved (1)", raw: "\x00\x00".bytes())
+    assert_equal(expected, reserved1)
+
+    reserved2 = @memory[0x0008]
+    expected = TestHelper.test_entry(address: 0x0008, type: :uint16_t, value: 0x0000, length: 2, user_defined: {}, comment: "Reserved (2)", raw: "\x00\x00".bytes())
+    assert_equal(expected, reserved2)
+
 #    offset_entry = @memory.get(address: 0x0a)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x0a,
-#        data: {
-#          comment: "Offset to pixel data",
-#          type: :offset,
-#          value: 0x7a
-#        },
-#        length: 4,
-#        refs: [0x7a],
-#        raw: [0x7a, 0x00, 0x00, 0x00],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, offset_entry)
-#
-#    dib_length = @memory.get(address: 0x0e)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x0e,
-#        data: { type: :uint32_t, value: 0x6c, comment: "DIB structure length (BITMAPV4HEADER)" },
-#        length: 4,
-#        refs: [],
-#        raw: [0x6c, 0x00, 0x00, 0x00],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, dib_length)
-#
-#    width = @memory.get(address: 0x12)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x12,
-#        data: { type: :uint32_t, value: 0x04, comment: "Image width" },
-#        length: 4,
-#        refs: [],
-#        raw: [0x04, 0x00, 0x00, 0x00],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, width)
-#
-#    height = @memory.get(address: 0x16)
-#    expected = {
-#      revision: 0x01,
-#      entries: [{
-#        address: 0x16,
-#        data: { type: :uint32_t, value: 0x04, comment: "Image height" },
-#        length: 4,
-#        refs: [],
-#        raw: [0x04, 0x00, 0x00, 0x00],
-#        xrefs: []
-#      }],
-#    }
-#    assert_equal(expected, height)
-#
-#    pixels = @memory.get(address: 0x7a, length: 0x30)
-#    expected = {
-#      revision: 1,
-#      entries: [
-#        # Row 4
-#        { address: 0x7a, data: { type: :rgb, value: "ffffff", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: [0x0a]},
-#        { address: 0x7d, data: { type: :rgb, value: "000000", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
-#        { address: 0x80, data: { type: :rgb, value: "0000ff", }, length: 3, refs: [], raw: [0xFF, 0x00, 0x00], xrefs: []},
-#        { address: 0x83, data: { type: :rgb, value: "ffffff", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-#
-#        # Row 3
-#        { address: 0x86, data: { type: :rgb, value: "000000", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
-#        { address: 0x89, data: { type: :rgb, value: "00ff00", }, length: 3, refs: [], raw: [0x00, 0xFF, 0x00], xrefs: []},
-#        { address: 0x8c, data: { type: :rgb, value: "ffffff", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-#        { address: 0x8f, data: { type: :rgb, value: "ff0000", }, length: 3, refs: [], raw: [0x00, 0x00, 0xFf], xrefs: []},
-#
-#        # Row 2
-#        { address: 0x92, data: { type: :rgb, value: "ff0000", }, length: 3, refs: [], raw: [0x00, 0x00, 0xFF], xrefs: []},
-#        { address: 0x95, data: { type: :rgb, value: "ffffff", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-#        { address: 0x98, data: { type: :rgb, value: "00ff00", }, length: 3, refs: [], raw: [0x00, 0xFF, 0x00], xrefs: []},
-#        { address: 0x9b, data: { type: :rgb, value: "000000", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
-#
-#        # Row 1
-#        { address: 0x9e, data: { type: :rgb, value: "ffffff", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-#        { address: 0xa1, data: { type: :rgb, value: "0000ff", }, length: 3, refs: [], raw: [0xFF, 0x00, 0x00], xrefs: []},
-#        { address: 0xa4, data: { type: :rgb, value: "000000", }, length: 3, refs: [], raw: [0x00, 0x00, 0x00], xrefs: []},
-#        { address: 0xa7, data: { type: :rgb, value: "ffffff", }, length: 3, refs: [], raw: [0xFF, 0xFF, 0xFF], xrefs: []},
-#      ]
-#    }
-#
-#    assert_equal(expected, pixels)
-#  end
-#end
+    offset = @memory[0x000a]
+    expected = TestHelper.test_entry(address: 0x000a, type: :offset32, value: 0x0000007a, length: 4, user_defined: {}, comment: "Offset to pixel data", raw: "\x7a\x00\x00\x00".bytes(), refs: { data: [0x0000007a] })
+    assert_equal(expected, offset)
+
+    dib_length = @memory[0x000e]
+    expected = TestHelper.test_entry(address: 0x000e, type: :uint32_t, value: 0x0000006c, length: 4, user_defined: {}, comment: "DIB structure length (BITMAPV4HEADER)", raw: "\x6c\x00\x00\x00".bytes())
+    assert_equal(expected, dib_length)
+
+    width = @memory[0x0012]
+    expected = TestHelper.test_entry(address: 0x0012, type: :uint32_t, value: 0x00000004, length: 4, user_defined: {}, comment: "Image width", raw: "\x04\x00\x00\x00".bytes())
+    assert_equal(expected, width)
+
+    height = @memory[0x0016]
+    expected = TestHelper.test_entry(address: 0x0016, type: :uint32_t, value: 0x00000004, length: 4, user_defined: {}, comment: "Image height", raw: "\x04\x00\x00\x00".bytes())
+    assert_equal(expected, height)
+
+    pixels = @memory.get(address: 0x7a, length: 0x30)[:entries]
+
+    expected = [
+      # Row 4
+      TestHelper.test_entry({ address: 0x7a, type: :rgb, value: "ffffff", length: 3, raw: [0xFF, 0xFF, 0xFF], xrefs: { data: [0x0a]} }),
+      TestHelper.test_entry({ address: 0x7d, type: :rgb, value: "000000", length: 3, raw: [0x00, 0x00, 0x00] }),
+      TestHelper.test_entry({ address: 0x80, type: :rgb, value: "0000ff", length: 3, raw: [0xFF, 0x00, 0x00] }),
+      TestHelper.test_entry({ address: 0x83, type: :rgb, value: "ffffff", length: 3, raw: [0xFF, 0xFF, 0xFF] }),
+
+      # Row 3
+      TestHelper.test_entry({ address: 0x86, type: :rgb, value: "000000", length: 3, raw: [0x00, 0x00, 0x00] }),
+      TestHelper.test_entry({ address: 0x89, type: :rgb, value: "00ff00", length: 3, raw: [0x00, 0xFF, 0x00] }),
+      TestHelper.test_entry({ address: 0x8c, type: :rgb, value: "ffffff", length: 3, raw: [0xFF, 0xFF, 0xFF] }),
+      TestHelper.test_entry({ address: 0x8f, type: :rgb, value: "ff0000", length: 3, raw: [0x00, 0x00, 0xFF] }),
+
+      # Row 2
+      TestHelper.test_entry({ address: 0x92, type: :rgb, value: "ff0000", length: 3, raw: [0x00, 0x00, 0xFF] }),
+      TestHelper.test_entry({ address: 0x95, type: :rgb, value: "ffffff", length: 3, raw: [0xFF, 0xFF, 0xFF] }),
+      TestHelper.test_entry({ address: 0x98, type: :rgb, value: "00ff00", length: 3, raw: [0x00, 0xFF, 0x00] }),
+      TestHelper.test_entry({ address: 0x9b, type: :rgb, value: "000000", length: 3, raw: [0x00, 0x00, 0x00] }),
+
+      # Row 1
+      TestHelper.test_entry({ address: 0x9e, type: :rgb, value: "ffffff", length: 3, raw: [0xFF, 0xFF, 0xFF] }),
+      TestHelper.test_entry({ address: 0xa1, type: :rgb, value: "0000ff", length: 3, raw: [0xFF, 0x00, 0x00] }),
+      TestHelper.test_entry({ address: 0xa4, type: :rgb, value: "000000", length: 3, raw: [0x00, 0x00, 0x00] }),
+      TestHelper.test_entry({ address: 0xa7, type: :rgb, value: "ffffff", length: 3, raw: [0xFF, 0xFF, 0xFF] }),
+    ]
+
+    assert_equal(expected, pixels)
+  end
+end

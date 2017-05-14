@@ -3,13 +3,13 @@ require 'test_helper'
 
 require 'h2gb/vault/types/updater'
 
-MEMORY = "\x00\x01\x02\x03\x03\x02\x01\x00\x00\x00\x04ABCDEFGH\0ABCDEFGH"
+UPDATER_MEMORY = "\x00\x01\x02\x03\x03\x02\x01\x00\x00\x00\x04ABCDEFGH\0ABCDEFGH"
 
 module H2gb
   module Vault
-    class BasicTypesTest < Test::Unit::TestCase
+    class UpdaterTest < Test::Unit::TestCase
       def setup()
-        @memory = Memory.new(raw: MEMORY)
+        @memory = Memory.new(raw: UPDATER_MEMORY)
         @updater = Updater.new(memory: @memory)
       end
 

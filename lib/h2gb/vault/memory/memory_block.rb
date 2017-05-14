@@ -19,7 +19,7 @@ module H2gb
         attr_reader :raw
 
         def initialize(raw:, revision:0)
-          @raw = raw
+          @raw = raw.force_encoding('ASCII-8BIT')
           @entries = {}
           @last_revision = -1
           @memory_refs = {}

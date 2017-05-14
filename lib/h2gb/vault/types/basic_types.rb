@@ -96,21 +96,43 @@ module H2gb
         )
       end
 
+      def _make_ntstring(address:, options:)
+        str_end = @memory.raw.index("\x00", address)
+        if str_end.nil?
+          raise(Error, "Couldn't find a NUL byte before the end of memory")
+        end
+
+        length = str_end - address + 1
+        @memory.define(
+          address: address,
+          type: :ntstring,
+          value: @memory.raw[address, length - 1],
+          length: length
+        )
+      end
+
+      def _make_string(address:, options:)
+        raise(Error, "TODO")
+      end
+
       def _define_basic_type(item:)
+        item[:options] = item[:options] || {}
         case item[:type]
         when :uint8_t
-          _make_uint8_t(address: item[:address], options: item[:options] || {})
+          _make_uint8_t(address: item[:address], options: item[:options])
         when :uint16_t
-          _make_uint16_t(address: item[:address], options: item[:options] || {})
+          _make_uint16_t(address: item[:address], options: item[:options])
         when :uint32_t
-          _make_uint32_t(address: item[:address], options: item[:options] || {})
+          _make_uint32_t(address: item[:address], options: item[:options])
         when :offset32
-          _make_offset32(address: item[:address], options: item[:options] || {})
+          _make_offset32(address: item[:address], options: item[:options])
         when :rgb
-          _make_rgb(address: item[:address], options: item[:options] || {})
+          _make_rgb(address: item[:address], options: item[:options])
+        when :ntstring
+          _make_ntstring(address: item[:address], options: item[:options])
+        when :string
+          _make_string(address: item[:address], options: item[:options])
         else
-          # TODO: This exception isn't working, but I plan to replace it anyways
-          puts item
           raise Error("Unknown type: %s" % item[:type])
         end
       end

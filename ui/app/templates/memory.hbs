@@ -1,0 +1,8 @@
+<p>Current revision: {{model.revision}}</p>
+
+<button {{action 'undo'}}>Undo</button>
+<button {{action 'redo'}}>Redo</button>
+
+{{#each model.entries as |entry|}}
+{{memory-entry entry=entry showedit='showedit' action='test' click='test2'}}
+{{/each}}

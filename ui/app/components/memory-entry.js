@@ -11,13 +11,13 @@ export default Ember.Component.extend({
     edit: function(entry) {
       this.set('editAddress',    '0x' + entry.address.toString(16));
       this.set('editLength',     '0x' + entry.length);
-      this.set('editType',       entry.data.type);
-      this.set('editValue',      entry.data.value);
-      this.set('editComment',    entry.data.comment);
+      this.set('editType',       entry.type);
+      this.set('editValue',      entry.value);
+      this.set('editComment',    entry.comment);
 
-      this.set('editRefs', entry.refs.map(function(ref) {
-        return '0x' + ref.toString(16);
-      }).toString());
+//      this.set('editRefs', entry.refs.map(function(ref) {
+//        return '0x' + ref.toString(16);
+//      }).toString());
 
       this.set('showEdit', true);
 

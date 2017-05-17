@@ -111,10 +111,6 @@ module H2gb
         )
       end
 
-      def _make_string(address:, options:)
-        raise(Error, "TODO")
-      end
-
       def _define_basic_type(item:)
         item[:options] = item[:options] || {}
         case item[:type]
@@ -130,8 +126,6 @@ module H2gb
           _make_rgb(address: item[:address], options: item[:options])
         when :ntstring
           _make_ntstring(address: item[:address], options: item[:options])
-        when :string
-          _make_string(address: item[:address], options: item[:options])
         else
           raise Error("Unknown type: %s" % item[:type])
         end

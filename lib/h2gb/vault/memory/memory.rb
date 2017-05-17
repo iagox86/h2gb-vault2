@@ -333,11 +333,6 @@ module H2gb
       end
 
       public
-      def raw()
-        return @memory_block.raw
-      end
-
-      public
       def undo()
         @mutex.synchronize() do
           @transactions.undo_transaction() do |action, entry|

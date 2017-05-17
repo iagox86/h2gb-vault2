@@ -32,17 +32,28 @@ module H2gb
       private
       def _validate_address(address:)
         if !address.is_a?(Integer) || address < 0
-          raise MemoryError("address must be a positive integer")
+          raise Error("address must be a positive integer")
         end
       end
 
       private
       def _do_item(item:)
+        puts(item.to_s)
+        if item['action']
+          item[:action] = item['action'] # TODO: Use strings by default (or find another way)
+        end
+        if item['address']
+          item[:address] = item['address']
+        end
+        if item['type']
+          item[:type] = item['type'].to_sym
+        end
+
         if item[:action].is_a?(String)
           item[:action] = item[:action].to_sym()
         end
         if !item[:action].is_a?(Symbol)
-          raise MemoryError("action must be a String or Symbol")
+          raise Error("action must be a String or Symbol")
         end
         _validate_address(address: item[:address])
 
@@ -74,10 +85,7 @@ module H2gb
           @memory.add_refs(type: item[:type], from: item[:address], tos: item[:tos])
         when :remove_refs
           @memory.remove_refs(type: item[:type], from: item[:address], tos: item[:tos])
-        when :set_metadata
-          #TODO @memory.set_metadata(key: item[:key], value: item[:value])
         else
-          # TODO: This raise isn't working, but I plan to move MemoryError anyways
           raise Error("Unknown action: %s" % item[:action])
         end
       end
@@ -85,7 +93,7 @@ module H2gb
       public
       def do(definition)
         if !definition.is_a?(Array)
-          raise MemoryError("definition must be an Array!")
+          raise Error("definition must be an Array!")
         end
 
         @memory.transaction() do

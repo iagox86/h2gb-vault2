@@ -1,8 +1,15 @@
 <p>Current revision: {{model.revision}}</p>
 
+<h1>Editor!</h1>
+
+{{editor-widget}}
+
+<hr />
+
 <button {{action 'undo'}}>Undo</button>
 <button {{action 'redo'}}>Redo</button>
 
+<h1>The memory!</h1>
 {{#each model.entries as |entry|}}
 {{memory-entry entry=entry showedit='showedit'}}
 {{/each}}

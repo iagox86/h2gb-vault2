@@ -17,20 +17,23 @@ $LOAD_PATH.unshift File.expand_path('../../../../', __FILE__)
 
 require 'h2gb/vault/memory/memory'
 require 'h2gb/vault/analyzers/bitmap'
+require 'h2gb/vault/analyzers/code'
 
 require 'h2gb/vault/api/error_handling'
 
 
 # TODO: We're loading a file automatically to save trouble, eventually I'll need
 # a better UI for this
-test_file = File.dirname(__FILE__) + '/data/test.bmp'
+#test_file = File.dirname(__FILE__) + '/data/test.bmp'
+test_file = File.dirname(__FILE__) + '/data/test.bin'
 
 memory = nil
 File.open(test_file, 'rb') do |f|
   memory = H2gb::Vault::Memory.new(raw: f.read())
 end
 
-analyzer = H2gb::Vault::BitmapAnalyzer.new(memory)
+#analyzer = H2gb::Vault::BitmapAnalyzer.new(memory)
+analyzer = H2gb::Vault::CodeAnalyzer.new(memory)
 analyzer.analyze()
 
 updater = H2gb::Vault::Updater.new(memory: memory)

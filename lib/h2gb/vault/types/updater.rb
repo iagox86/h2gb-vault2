@@ -38,7 +38,6 @@ module H2gb
 
       private
       def _do_item(item:)
-        puts(item.to_s)
         if item['action']
           item[:action] = item['action'] # TODO: Use strings by default (or find another way)
         end

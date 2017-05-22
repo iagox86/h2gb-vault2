@@ -1,3 +1,4 @@
+# encoding: ASCII-8BIT
 ##
 # code.rb
 # Created May, 2017
@@ -11,7 +12,7 @@
 require 'h2gb/vault/error'
 require 'h2gb/vault/memory/memory'
 
-require 'metasm'
+require 'crabstone'
 
 module H2gb
   module Vault
@@ -25,23 +26,12 @@ module H2gb
       end
 
       def analyze()
-        cpu = Metasm::X86.new()
-        decoder = Metasm::EncodedData.new(@memory.raw)
-        decoder.ptr = 0
+        cs = Crabstone::Disassembler.new(Crabstone::ARCH_X86, Crabstone::MODE_32)
+        cs.decomposer = true
+
         updates = []
-
-        i = 0
-        while i < @memory.raw.length
-          instruction = cpu.decode_instruction(decoder, decoder.ptr)
-
-          if(instruction.nil?)
-            i += 1
-            next
-          end
-
-          value = instruction.instruction.to_s()
-          updates << { action: :define_custom_type,  address: i, type: :code, length:instruction.bin_length , value: value }
-          i += instruction.bin_length
+        cs.disasm(@memory.raw, 0).each do |instruction|
+          updates << { action: :define_custom_type, address: instruction.address, type: :code, length: instruction.bytes.length, value: '%s %s' % [instruction.mnemonic.to_s, instruction.op_str.to_s] }
         end
 
         @updater.do(updates)

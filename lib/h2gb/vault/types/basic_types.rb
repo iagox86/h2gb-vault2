@@ -1,3 +1,4 @@
+# encoding: ASCII-8BIT
 ##
 # basic_types.rb
 # Created May, 2017
@@ -106,7 +107,7 @@ module H2gb
         @memory.define(
           address: address,
           type: :ntstring,
-          value: @memory.raw[address, length - 1],
+          value: @memory.raw[address, length - 1].to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: '?'),
           length: length
         )
       end

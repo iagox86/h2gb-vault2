@@ -1,3 +1,4 @@
+# encoding: ASCII-8BIT
 ##
 # updater.rb
 # By Ron Bowes

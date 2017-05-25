@@ -1,3 +1,4 @@
+# encoding: ASCII-8BIT
 ##
 # main.rb
 # Created April, 2017

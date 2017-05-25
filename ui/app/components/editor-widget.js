@@ -19,8 +19,7 @@ export default Ember.Component.extend({
         ]
       };
 
-      console.log(request);
-      Ember.$.ajax('http://localhost:4567/api/memories/1/update', {
+      Ember.$.ajax('http://localhost:4567/api/memories/' + this.get('memory_id') + '/update', {
         data: JSON.stringify(request),
         contentType: 'application/json',
         type: 'POST',

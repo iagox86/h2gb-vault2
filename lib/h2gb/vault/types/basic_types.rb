@@ -104,11 +104,15 @@ module H2gb
         end
 
         length = str_end - address + 1
+
+        value = @memory.raw[address, length - 1]
+        value = value.bytes.map { |c| (c < 0x20 || c > 0x7F) ? '\x%02x' % c : c.chr }.join()
+
         @memory.define(
           address: address,
           type: :ntstring,
-          value: @memory.raw[address, length - 1].to_s.encode("UTF-8", invalid: :replace, undef: :replace, replace: '?'),
-          length: length
+          value: value,
+          length: length,
         )
       end
 

@@ -14,6 +14,9 @@
   {{else if (eq type 'rgb')}}
     rgb #{{value}}
 
+  {{else if (eq type 'ntstring')}}
+    "#{{value}}"
+
   {{else if (eq type 'code')}}
     {{value}}
 

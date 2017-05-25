@@ -6,8 +6,8 @@
 
 <hr />
 
-<button {{action 'undo'}}>Undo</button>
-<button {{action 'redo'}}>Redo</button>
+<button {{action 'undo' model.id}}>Undo</button>
+<button {{action 'redo' model.id}}>Redo</button>
 
 <h1>The memory!</h1>
 {{#each model.entries as |entry|}}

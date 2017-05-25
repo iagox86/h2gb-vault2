@@ -27,7 +27,6 @@ module H2gb
 
       def analyze()
         cs = Crabstone::Disassembler.new(Crabstone::ARCH_X86, Crabstone::MODE_32)
-        cs.decomposer = true
 
         updates = []
         cs.disasm(@memory.raw, 0).each do |instruction|

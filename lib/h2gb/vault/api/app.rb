@@ -11,7 +11,6 @@
 require 'base64'
 require 'json'
 require 'sinatra'
-require 'sinatra/cross_origin'
 
 $LOAD_PATH.unshift File.expand_path('../../../../', __FILE__)
 
@@ -22,21 +21,24 @@ require 'h2gb/vault/analyzers/code'
 require 'h2gb/vault/api/error_handling'
 
 
-# TODO: We're loading a file automatically to save trouble, eventually I'll need
-# a better UI for this
-#test_file = File.dirname(__FILE__) + '/data/test.bmp'
-test_file = File.dirname(__FILE__) + '/data/test.bin'
+memories = {}
+updaters = {}
 
-memory = nil
+test_file = File.dirname(__FILE__) + '/data/test.bmp'
 File.open(test_file, 'rb') do |f|
-  memory = H2gb::Vault::Memory.new(raw: f.read())
+  memories['1'] = H2gb::Vault::Memory.new(raw: f.read())
 end
-
-#analyzer = H2gb::Vault::BitmapAnalyzer.new(memory)
-analyzer = H2gb::Vault::CodeAnalyzer.new(memory)
+analyzer = H2gb::Vault::BitmapAnalyzer.new(memories['1'])
 analyzer.analyze()
+updaters['1'] = H2gb::Vault::Updater.new(memory: memories['1'])
 
-updater = H2gb::Vault::Updater.new(memory: memory)
+test_file = File.dirname(__FILE__) + '/data/test.bin'
+File.open(test_file, 'rb') do |f|
+  memories['2'] = H2gb::Vault::Memory.new(raw: f.read())
+end
+analyzer = H2gb::Vault::CodeAnalyzer.new(memories['2'])
+analyzer.analyze()
+updaters['2'] = H2gb::Vault::Updater.new(memory: memories['2'])
 
 configure() do
   set(:allow_methods, [:get, :post, :put, :delete, :options])
@@ -85,27 +87,32 @@ options("*") do
 end
 
 get('/api/memories') do
-  return {
-    data: [{
+  results = []
+
+  memories.each_pair do |id, memory|
+    results << {
       type: 'memory',
-      id: '1',
-      attributes: memory.get_all(),
-    }]
-  }
+      id: id,
+      attributes: memories[id].get_all(),
+    }
+  end
+
+  return results
 end
 
 get('/api/memories/:id') do |id|
+  puts "id = %s" % id.to_s
   return {
     data: {
       type: 'memory',
       id: id,
-      attributes: memory.get_all(),
+      attributes: memories[id].get_all(),
     }
   }
 end
 
 post('/api/memories/:id/update') do |id|
-  updater.do(@params['updates'])
+  updaters[id].do(@params['updates'])
 
   return {
     'status': 200
@@ -113,7 +120,7 @@ post('/api/memories/:id/update') do |id|
 end
 
 post('/api/memories/:id/undo') do |id|
-  memory.undo()
+  memories[id].undo()
 
   return {
     'status': 200
@@ -121,7 +128,7 @@ post('/api/memories/:id/undo') do |id|
 end
 
 post('/api/memories/:id/redo') do |id|
-  memory.redo()
+  memories[id].redo()
 
   return {
     'status': 200

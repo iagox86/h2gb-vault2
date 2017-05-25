@@ -7,7 +7,7 @@ const Router = Ember.Router.extend({
 });
 
 Router.map(function() {
-  this.route('memory');
+  this.route('memory', { path: '/memories/:memory_id' });
 });
 
 export default Router;

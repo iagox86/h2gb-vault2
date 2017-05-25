@@ -1,7 +1,7 @@
 import Ember from 'ember';
 
 export default Ember.Route.extend({
-  model: function() {
-    return this.store.findRecord('memory', 1);
+  model: function(params) {
+    return this.store.findRecord('memory', params.memory_id);
   },
 });

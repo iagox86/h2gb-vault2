@@ -33,4 +33,5 @@ Gem::Specification.new do |spec|
   spec.add_dependency "simplecov"
   spec.add_dependency "sinatra"
   spec.add_dependency "crabstone"
+  spec.add_dependency "json"
 end

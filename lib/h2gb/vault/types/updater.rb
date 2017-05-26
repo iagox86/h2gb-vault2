@@ -8,7 +8,7 @@
 ##
 
 require 'h2gb/vault/error'
-require 'h2gb/vault/memory/memory'
+require 'h2gb/vault/memory/workspace'
 require 'h2gb/vault/types/basic_types'
 
 module H2gb

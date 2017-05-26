@@ -10,7 +10,7 @@ module H2gb
   module Vault
     class BasicTypesTest < Test::Unit::TestCase
       def setup()
-        @memory = Memory.new(raw: BASIC_TYPES_MEMORY)
+        @memory = Memory::Workspace.new(raw: BASIC_TYPES_MEMORY)
         @updater = Updater.new(memory: @memory)
       end
 

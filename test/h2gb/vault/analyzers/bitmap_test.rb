@@ -9,7 +9,7 @@ module H2gb
       def test_parsing()
         test_file = File.dirname(__FILE__) + '/data/test.bmp'
         File.open(test_file, 'rb') do |f|
-          @memory = Memory.new(raw: f.read())
+          @memory = Memory::Workspace.new(raw: f.read())
         end
         @analyzer = BitmapAnalyzer.new(@memory)
         @analyzer.analyze()

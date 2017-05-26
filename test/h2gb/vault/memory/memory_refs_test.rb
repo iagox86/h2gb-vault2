@@ -1,7 +1,6 @@
 require 'test_helper'
 
 require 'h2gb/vault/error'
-require 'h2gb/vault/memory/memory'
 require 'h2gb/vault/memory/memory_refs'
 
 module H2gb

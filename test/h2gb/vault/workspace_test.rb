@@ -314,6 +314,23 @@ module H2gb
         assert_equal(expected, result)
       end
 
+      def test_automatic_undefine_handles_references()
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, refs: {code: [0x10], data: [0x20]})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001)
+
+        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        expected = {
+          revision: 0x02,
+          entries: [
+            TestHelper.test_entry(address: 0x00, length: 0x0001, raw: "\x00".bytes()),
+            TestHelper.test_entry_deleted(address: 0x10, raw: "\x10".bytes()),
+            TestHelper.test_entry_deleted(address: 0x20, raw: "\x20".bytes()),
+          ]
+        }
+
+        assert_equal(expected, result)
+      end
+
       def test_define_invalid()
         assert_raises(Error) do
           _test_define(workspace: @workspace, address: 0x0100, length: 0x01)

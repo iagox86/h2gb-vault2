@@ -5,7 +5,7 @@ require 'h2gb/vault/workspace'
 # Generate a nice simple test memory map
 RAW = (0..255).to_a().map() { |b| b.chr() }.join()
 
-def _test_define(block_name: nil, workspace:, address:, type: :type, value: "value", length:, refs: {}, user_defined: {}, comment: nil, do_transaction: true)
+def _test_define(block_name: 'test', workspace:, address:, type: :type, value: "value", length:, refs: {}, user_defined: {}, comment: nil, do_transaction: true)
   if do_transaction
     workspace.transaction() do
       workspace.define(
@@ -33,7 +33,7 @@ def _test_define(block_name: nil, workspace:, address:, type: :type, value: "val
   end
 end
 
-def _test_undefine(block_name:nil, workspace:, address:, length:, do_transaction:true)
+def _test_undefine(block_name:'test', workspace:, address:, length:, do_transaction:true)
   if do_transaction
     workspace.transaction() do
       workspace.undefine(block_name: block_name, address: address, length: length)
@@ -47,13 +47,16 @@ module H2gb
   module Vault
     class InsertTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_empty()
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x00,
+          revision: 0x01,
           entries: [],
         }
         assert_equal(expected, result)
@@ -62,9 +65,9 @@ module H2gb
       def test_single_entry()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00])
           ]
@@ -76,9 +79,9 @@ module H2gb
       def test_get_longer_entry()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0008)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x08, raw: "\x00\x01\x02\x03\x04\x05\x06\x07".bytes())
           ]
@@ -90,9 +93,9 @@ module H2gb
       def test_get_entry_in_middle()
         _test_define(workspace: @workspace, address: 0x0080, length: 0x0004)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x80, length: 0x04, raw: "\x80\x81\x82\x83".bytes())
           ]
@@ -105,10 +108,10 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002)
         _test_define(workspace: @workspace, address: 0x0002, length: 0x0002)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
             TestHelper.test_entry(address: 0x02, length: 0x02, raw: "\x02\x03".bytes()),
@@ -124,10 +127,10 @@ module H2gb
           _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, do_transaction: false)
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 1,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
             TestHelper.test_entry(address: 0x02, length: 0x02, raw: "\x02\x03".bytes()),
@@ -141,10 +144,10 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002)
         _test_define(workspace: @workspace, address: 0x0080, length: 0x0002)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes()),
             TestHelper.test_entry(address: 0x80, length: 0x02, raw: "\x80\x81".bytes()),
@@ -158,9 +161,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'B'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
           ]
@@ -173,9 +176,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'B'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: "\x00".bytes(), user_defined: { test: 'B'} ),
             TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
@@ -191,9 +194,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0008, user_defined: { test: 'A'} )
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'B'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
@@ -213,9 +216,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
         _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
             TestHelper.test_entry(address: 0x01, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'C'} ),
@@ -231,9 +234,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0010, length: 0x0010, user_defined: { test: 'B'} )
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0080, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x80, raw: (0x00..0x7F).to_a(), user_defined: { test: 'C'} ),
           ]
@@ -245,9 +248,9 @@ module H2gb
       def test_refs()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, refs: { code: [0x10], data: [0x20] })
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], refs: { code: [0x10], data: [0x20] }),
             TestHelper.test_entry_deleted(address: 0x10, raw: "\x10".bytes(), xrefs: { code: [0x0000] }),
@@ -262,9 +265,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002)
         _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
@@ -281,9 +284,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0007, length: 0x0002)
         _test_undefine(workspace: @workspace, address: 1, length: 4)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x01, raw: "\x01".bytes()),
@@ -301,9 +304,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, refs: {code: [0x10], data: [0x20]})
         _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x10, raw: "\x10".bytes()),
@@ -318,9 +321,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, refs: {code: [0x10], data: [0x20]})
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x0001, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x10, raw: "\x10".bytes()),
@@ -351,7 +354,10 @@ module H2gb
     ##
     class TransactionTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_add_transaction()
@@ -367,29 +373,32 @@ module H2gb
       end
 
       def test_revision_increment()
-        result = @workspace.get(address: 0x00, length: 0x00, since: 0)
-        assert_equal(0, result[:revision])
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x00, since: 1)
+        assert_equal(1, result[:revision])
 
         @workspace.transaction() do
         end
 
-        result = @workspace.get(address: 0x00, length: 0x00, since: 0)
-        assert_equal(1, result[:revision])
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x00, since: 1)
+        assert_equal(2, result[:revision])
       end
     end
 
     class DeleteTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_delete_nothing()
         _test_undefine(workspace: @workspace, address: 0x00, length: 0xFF)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [],
         }
         assert_equal(expected, result)
@@ -399,9 +408,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'A'} )
         _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
           ],
@@ -414,9 +423,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
         _test_undefine(workspace: @workspace, address: 0, length: 1)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -432,9 +441,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0010, user_defined: { test: 'A'} )
         _test_undefine(workspace: @workspace, address: 8, length: 0)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x10, raw: (0x00..0x0F).to_a(), user_defined: { test: 'A'} ),
           ],
@@ -447,9 +456,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
         _test_undefine(workspace: @workspace, address: 0000, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -465,9 +474,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
         _test_undefine(workspace: @workspace, address: 0002, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -485,9 +494,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
         _test_undefine(workspace: @workspace, address: 0x0000, length: 0xFF)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -513,9 +522,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
         _test_undefine(workspace: @workspace, address: 0x0004, length: 0x04)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
@@ -536,9 +545,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x000c, length: 0x0004, user_defined: { test: 'D'} )
         _test_undefine(workspace: @workspace, address: 0x0004, length: 0x08)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes()),
@@ -559,7 +568,10 @@ module H2gb
 
     class UndoTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_basic_undo()
@@ -568,9 +580,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -586,9 +598,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -598,9 +610,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.undo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -611,9 +623,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.undo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -625,9 +637,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.undo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -646,9 +658,9 @@ module H2gb
         @workspace.undo()
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 4,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -670,9 +682,9 @@ module H2gb
 
         @workspace.undo() # undo B
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -683,9 +695,9 @@ module H2gb
 
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -697,9 +709,9 @@ module H2gb
 
         @workspace.undo() # undo C
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -712,9 +724,9 @@ module H2gb
 
         @workspace.undo() # undo A
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -735,9 +747,9 @@ module H2gb
 
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -748,9 +760,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.undo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -773,10 +785,10 @@ module H2gb
         @workspace.undo()
 
         _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'B'} )
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'B'} ),
@@ -790,9 +802,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
         _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'B'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'B'} ),
@@ -801,9 +813,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.undo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -823,9 +835,9 @@ module H2gb
           _test_define(workspace: @workspace, address: 0x0003, length: 0x0002, user_defined: { test: 'D'}, do_transaction: false )
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'C'} ),
@@ -836,18 +848,18 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             { address: 0x00, data: "A", length: 0x02, refs: [], raw: [0x00, 0x01], xrefs: [] },
             { address: 0x02, data: "B", length: 0x02, refs: [], raw: [0x02, 0x03], xrefs: [] },
             { address: 0x04, data: nil, length: 0x01, refs: [], raw: [0x04], xrefs: [] },
           ]
         }
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -863,33 +875,33 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
-        expected = {
-          revision: 0x03,
-          entries: [
-            TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
-
-          ],
-        }
-        assert_equal(expected, result)
-
-        @workspace.redo()
-
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
           revision: 0x04,
           entries: [
-            TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+            TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
+
           ],
         }
         assert_equal(expected, result)
 
-        @workspace.undo()
+        @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
           revision: 0x05,
           entries: [
+            TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
+          ],
+        }
+        assert_equal(expected, result)
+
+        @workspace.undo()
+
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
+        expected = {
+          revision: 0x06,
+          entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
           ],
         }
@@ -897,9 +909,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
           ],
@@ -908,9 +920,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x07,
+          revision: 0x08,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
           ],
@@ -919,9 +931,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x08,
+          revision: 0x09,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'B'} ),
           ],
@@ -932,7 +944,10 @@ module H2gb
 
     class RedoTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_basic_redo()
@@ -941,10 +956,10 @@ module H2gb
         @workspace.undo()
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -963,9 +978,9 @@ module H2gb
         @workspace.undo()
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -978,9 +993,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.redo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x07,
+          revision: 0x08,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes()),
@@ -992,9 +1007,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.redo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x08,
+          revision: 0x09,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -1005,9 +1020,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.redo()
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -1024,10 +1039,10 @@ module H2gb
         @workspace.redo()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -1047,9 +1062,9 @@ module H2gb
 
         @workspace.undo() # undo B
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1060,9 +1075,9 @@ module H2gb
 
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1074,9 +1089,9 @@ module H2gb
 
         @workspace.undo() # undo C
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1089,9 +1104,9 @@ module H2gb
 
         @workspace.undo() # undo A
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1105,9 +1120,9 @@ module H2gb
 
         @workspace.redo() # redo A
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x07,
+          revision: 0x08,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1120,9 +1135,9 @@ module H2gb
 
         @workspace.redo() # redo C
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x08,
+          revision: 0x09,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1133,9 +1148,9 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.redo() # Should do nothing
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x08,
+          revision: 0x09,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1155,9 +1170,9 @@ module H2gb
         @workspace.undo()
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         assert_equal({
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1170,9 +1185,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x07,
+          revision: 0x08,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1187,9 +1202,9 @@ module H2gb
 
         @workspace.redo() # Should do nothing
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x08,
+          revision: 0x09,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
@@ -1212,10 +1227,10 @@ module H2gb
         @workspace.redo()
 
         _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -1237,9 +1252,9 @@ module H2gb
         @workspace.redo()
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x03, raw: "\x00\x01\x02".bytes(), user_defined: { test: 'C'} ),
           ]
@@ -1260,16 +1275,16 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0006, length: 0x0002, user_defined: { test: 'F'}, do_transaction: false)
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
 
         @workspace.undo()
         @workspace.undo()
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'C'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -1283,9 +1298,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'E'} ),
@@ -1300,16 +1315,19 @@ module H2gb
 
     class GetChangesSinceTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
 
       def test_get_from_minus_one()
         _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'A'})
 
-        result = @workspace.get(address: 0x00, length: 0x04, since: -1)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x04, since: -1)
         expected = {
-          revision: 0x1,
+          revision: 0x2,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'A'} ),
@@ -1323,9 +1341,9 @@ module H2gb
       def test_add_one()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'A'})
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 1)
         expected = {
-          revision: 0x1,
+          revision: 0x2,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x01, raw: "\x00".bytes(), user_defined: { test: 'A'} ),
           ]
@@ -1339,9 +1357,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
         _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'})
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 1)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
@@ -1350,9 +1368,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 1)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 2)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: [
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'} ),
             TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
@@ -1360,18 +1378,18 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 2)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 3)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: [
             TestHelper.test_entry(address: 0x0008, length: 0x04, raw: "\x08\x09\x0a\x0b".bytes(), user_defined: { test: 'C'} ),
           ]
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 3)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 4)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: []
         }
         assert_equal(expected, result)
@@ -1382,9 +1400,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'})
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'C'})
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 1)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1395,9 +1413,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 1)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 2)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1408,9 +1426,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 2)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 3)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0002, raw: "\x02".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0003, raw: "\x03".bytes() ),
@@ -1419,9 +1437,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 3)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 4)
         expected = {
-          revision: 0x3,
+          revision: 0x4,
           entries: []
         }
         assert_equal(expected, result)
@@ -1435,9 +1453,9 @@ module H2gb
         @workspace.undo()
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1449,9 +1467,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 3)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 4)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1463,9 +1481,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 4)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 5)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1475,9 +1493,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 5)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 6)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1485,9 +1503,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 6)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 7)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [],
         }
         assert_equal(expected, result)
@@ -1504,9 +1522,9 @@ module H2gb
         @workspace.redo()
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 1)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1516,9 +1534,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 6)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 7)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1528,9 +1546,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 7)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 8)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes() ),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes() ),
@@ -1540,9 +1558,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 8)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 9)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry(address: 0x0008, length: 0x02, raw: "\x08\x09".bytes(), user_defined: { test: 'C'} ),
           ]
@@ -1553,16 +1571,19 @@ module H2gb
 
     class XrefsTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_basic_xref()
        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000]})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000]} ),
@@ -1575,9 +1596,9 @@ module H2gb
        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {data: [0x0000], code: [0x0000, 0x0004]})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {data: [0x0004], code: [0x0004]} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {data: [0x0000], code: [0x0000, 0x0004]}, xrefs: {code: [0x0004]} ),
@@ -1590,9 +1611,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0002]})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0002]} ),
@@ -1605,9 +1626,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0000, 0x0002]})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004, 0x0004]} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0000, 0x0002]} ),
@@ -1621,9 +1642,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {})
         _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, xrefs: {code: [0x0000]}),
@@ -1638,9 +1659,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0008]})
         _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009]} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0008] }, xrefs: {code: [0x0000]} ),
@@ -1654,9 +1675,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0000]})
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0005]})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0000] }, xrefs: { code: [0x0000]} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0005] }, xrefs: {} ),
@@ -1669,9 +1690,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0000]})
         _test_define(workspace: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0002]})
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1688,9 +1709,9 @@ module H2gb
 
         _test_undefine(workspace: @workspace, address: 0x0000, length: 0x01)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x0004] }),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1709,9 +1730,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: { code: [0x0007]})
         _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x04] }),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1725,9 +1746,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x05,
+          revision: 0x06,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
@@ -1738,9 +1759,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
@@ -1754,9 +1775,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x07,
+          revision: 0x08,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
@@ -1773,9 +1794,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x08,
+          revision: 0x09,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1795,9 +1816,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
@@ -1814,9 +1835,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x0a,
+          revision: 0x0b,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
@@ -1830,9 +1851,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x0b,
+          revision: 0x0c,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009] }, xrefs: { code: [0x04] }),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a] }, xrefs: { code: [0x00] }),
@@ -1843,9 +1864,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x0c,
+          revision: 0x0d,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes(), xrefs: { code: [0x04] }),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1863,9 +1884,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0004]})
         _test_define(workspace: @workspace, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, refs: {code: [0x0005, 0x000a]})
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
@@ -1875,9 +1896,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 1)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 2)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -1886,9 +1907,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 2)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 3)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -1901,9 +1922,9 @@ module H2gb
         @workspace.undo()
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 3)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 4)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1919,9 +1940,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 4)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 5)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1935,9 +1956,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 5)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 6)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -1953,9 +1974,9 @@ module H2gb
         @workspace.redo()
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 6)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 7)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
@@ -1965,9 +1986,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 7)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 8)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -1976,9 +1997,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0x10, since: 8)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 9)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -1992,12 +2013,12 @@ module H2gb
        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
        @workspace.transaction do
-         @workspace.add_refs(type: :code, from: 0x0004, tos: [0x0000])
+         @workspace.add_refs(block_name: 'test', type: :code, from: 0x0004, tos: [0x0000])
        end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {code: [0x0004]} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {code: [0x0000]} ),
@@ -2010,12 +2031,12 @@ module H2gb
        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0000]} )
        @workspace.transaction do
-         @workspace.remove_refs(type: :code, from: 0x0004, tos: [0x0000])
+         @workspace.remove_refs(block_name: 'test', type: :code, from: 0x0004, tos: [0x0000])
        end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, xrefs: {} ),
             TestHelper.test_entry(address: 0x0004, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test: 'B'}, refs: {} ),
@@ -2027,7 +2048,10 @@ module H2gb
 
     class SaveRestoreTest < Test::Unit::TestCase
       def test_save_load()
-        workspace = Workspace.new(raw: RAW)
+        workspace = Workspace.new()
+        workspace.transaction() do
+          workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
 
         _test_define(workspace: workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] })
         _test_define(workspace: workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0004] })
@@ -2037,9 +2061,9 @@ module H2gb
         workspace = Workspace.load(workspace.dump())
         assert_not_nil(workspace)
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 0)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
@@ -2049,9 +2073,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 1)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 2)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -2060,9 +2084,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 2)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 3)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -2075,9 +2099,9 @@ module H2gb
         workspace.undo()
         workspace.undo()
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 3)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 4)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -2093,9 +2117,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 4)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 5)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -2109,9 +2133,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 5)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 6)
         expected = {
-          revision: 0x06,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry_deleted(address: 0x0001, raw: "\x01".bytes()),
@@ -2127,9 +2151,9 @@ module H2gb
         workspace.redo()
         workspace.redo()
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 6)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 7)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] }),
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
@@ -2139,9 +2163,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 7)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 8)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -2150,9 +2174,9 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = workspace.get(address: 0x00, length: 0x10, since: 8)
+        result = workspace.get(block_name: 'test', address: 0x00, length: 0x10, since: 9)
         expected = {
-          revision: 0x09,
+          revision: 0x0a,
           entries: [
             TestHelper.test_entry_deleted(address: 0x0004, raw: "\x04".bytes(), xrefs: { code: [0x00] }),
             TestHelper.test_entry(address: 0x0005, length: 0x04, raw: "\x05\x06\x07\x08".bytes(), user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] }, xrefs: { code: [0x0000, 0x0005] }),
@@ -2171,15 +2195,18 @@ module H2gb
 
     class UserDefinedTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_replace()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
           ]
@@ -2187,12 +2214,12 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.transaction() do
-          @workspace.replace_user_defined(address: 0x0000, user_defined: { test2: "B" })
+          @workspace.replace_user_defined(block_name: 'test', address: 0x0000, user_defined: { test2: "B" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
           ]
@@ -2203,9 +2230,9 @@ module H2gb
       def test_update()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
           ]
@@ -2213,12 +2240,12 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.transaction() do
-          @workspace.update_user_defined(address: 0x0000, user_defined: { test2: "B" })
+          @workspace.update_user_defined(block_name: 'test', address: 0x0000, user_defined: { test2: "B" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
           ]
@@ -2229,9 +2256,9 @@ module H2gb
       def test_replace_undo_redo()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
           ]
@@ -2239,12 +2266,12 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.transaction() do
-          @workspace.replace_user_defined(address: 0x0000, user_defined: { test2: "B" })
+          @workspace.replace_user_defined(block_name: 'test', address: 0x0000, user_defined: { test2: "B" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
           ]
@@ -2253,9 +2280,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
           ]
@@ -2264,9 +2291,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
           ]
@@ -2277,9 +2304,9 @@ module H2gb
       def test_update_undo_redo()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
           ]
@@ -2287,12 +2314,12 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.transaction() do
-          @workspace.update_user_defined(address: 0x0000, user_defined: { test2: "B" })
+          @workspace.update_user_defined(block_name: 'test', address: 0x0000, user_defined: { test2: "B" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
           ]
@@ -2301,9 +2328,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
           ]
@@ -2312,9 +2339,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A", test2: "B" })
           ]
@@ -2326,9 +2353,9 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
         _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test2: "B" })
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
             TestHelper.test_entry(address: 0x04, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test2: "B" }),
@@ -2336,21 +2363,21 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0x02)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:0x03)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
           ]
         }
         assert_equal(expected, result)
 
         @workspace.transaction() do
-          @workspace.replace_user_defined(address: 0x0000, user_defined: { test3: "C" })
+          @workspace.replace_user_defined(block_name: 'test', address: 0x0000, user_defined: { test3: "C" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0x02)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:0x03)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test3: "C" }),
           ]
@@ -2358,12 +2385,12 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.transaction() do
-          @workspace.update_user_defined(address: 0x0004, user_defined: { test4: "D" })
+          @workspace.update_user_defined(block_name: 'test', address: 0x0004, user_defined: { test4: "D" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0x03)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:0x04)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x04, length: 0x04, raw: "\x04\x05\x06\x07".bytes(), user_defined: { test2: "B", test4: "D" }),
           ]
@@ -2376,7 +2403,7 @@ module H2gb
 
         @workspace.transaction() do
           assert_raises(Error) do
-            @workspace.replace_user_defined(address: 0x0000, user_defined: "hi")
+            @workspace.replace_user_defined(block_name: 'test', address: 0x0000, user_defined: "hi")
           end
         end
       end
@@ -2384,9 +2411,9 @@ module H2gb
       def test_replace_in_middle()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" })
           ]
@@ -2394,12 +2421,12 @@ module H2gb
         assert_equal(expected, result)
 
         @workspace.transaction() do
-          @workspace.replace_user_defined(address: 0x0002, user_defined: { test2: "B" })
+          @workspace.replace_user_defined(block_name: 'test', address: 0x0002, user_defined: { test2: "B" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test2: "B" })
           ]
@@ -2411,12 +2438,12 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         @workspace.transaction() do
-          @workspace.replace_user_defined(address: 0x0008, user_defined: { test2: "B" })
+          @workspace.replace_user_defined(block_name: 'test', address: 0x0008, user_defined: { test2: "B" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
             TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
@@ -2426,9 +2453,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
             TestHelper.test_entry_deleted(address: 0x08, raw: "\x08".bytes()),
@@ -2438,9 +2465,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
             TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
@@ -2453,12 +2480,12 @@ module H2gb
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         @workspace.transaction() do
-          @workspace.update_user_defined(address: 0x0008, user_defined: { test2: "B" })
+          @workspace.update_user_defined(block_name: 'test', address: 0x0008, user_defined: { test2: "B" })
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
             TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
@@ -2468,9 +2495,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
             TestHelper.test_entry_deleted(address: 0x08, raw: "\x08".bytes()),
@@ -2480,9 +2507,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x04, raw: "\x00\x01\x02\x03".bytes(), user_defined: { test: "A" }),
             TestHelper.test_entry(address: 0x08, length: 0x01, type: :uint8_t, raw: "\x08".bytes(), user_defined: { test2: "B" }, comment: nil, value: 8),
@@ -2494,7 +2521,10 @@ module H2gb
 
     class ChangeCommentTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(raw: RAW)
+        @workspace = Workspace.new()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
       end
 
       def test_set_comment()
@@ -2503,9 +2533,9 @@ module H2gb
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
           ]
@@ -2520,9 +2550,9 @@ module H2gb
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
           ]
@@ -2537,9 +2567,9 @@ module H2gb
           @workspace.set_comment(address: 0x0000, comment: nil)
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: nil)
           ]
@@ -2554,9 +2584,9 @@ module H2gb
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
           ]
@@ -2565,9 +2595,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'hihi')
           ]
@@ -2576,9 +2606,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
-          revision: 0x04,
+          revision: 0x05,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
           ]
@@ -2591,9 +2621,9 @@ module H2gb
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x01,
+          revision: 0x02,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, type: :uint8_t, raw: "\x00".bytes(), comment: 'blahblah', value: 0, user_defined: {}),
           ]
@@ -2602,9 +2632,9 @@ module H2gb
 
         @workspace.undo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry_deleted(address: 0x00, raw: "\x00".bytes()),
           ]
@@ -2613,9 +2643,9 @@ module H2gb
 
         @workspace.redo()
 
-        result = @workspace.get(address: 0x00, length: 0xFF, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
         expected = {
-          revision: 0x03,
+          revision: 0x04,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, type: :uint8_t, raw: "\x00".bytes(), comment: 'blahblah', value: 0, user_defined: {}),
           ]
@@ -2629,9 +2659,9 @@ module H2gb
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
 
-        result = @workspace.get(address: 0x00, length: 0x01, since:1)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:2)
         expected = {
-          revision: 0x02,
+          revision: 0x03,
           entries: [
             TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00], comment: 'blahblah')
           ]
@@ -2643,7 +2673,7 @@ module H2gb
 
     class CreateDeleteBlockTest < Test::Unit::TestCase
       def setup()
-        @workspace = Workspace.new(hax_add_magic_block: false)
+        @workspace = Workspace.new()
       end
 
       def test_create_block()
@@ -2654,7 +2684,7 @@ module H2gb
 
         _test_define(block_name: 'test', workspace: @workspace, address: 0x0000, length: 0x0001)
 
-        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
         expected = {
           revision: 0x02,
           entries: [
@@ -2675,11 +2705,11 @@ module H2gb
         _test_define(block_name: 'aaaa', workspace: @workspace, address: 0x0000, length: 0x0001, comment: "a!!")
         _test_define(block_name: 'bbbb', workspace: @workspace, address: 0x0000, length: 0x0004, comment: "B!!")
 
-        result = @workspace.get(block_name: 'aaaa', address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'aaaa', address: 0x00, length: 0x01, since:1)
         assert_equal('a!!', result[:entries][0][:comment])
         assert_equal('A'.bytes(), result[:entries][0][:raw])
 
-        result = @workspace.get(block_name: 'bbbb', address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'bbbb', address: 0x00, length: 0x01, since:1)
         assert_equal('B!!', result[:entries][0][:comment])
         assert_equal('BBBB'.bytes(), result[:entries][0][:raw])
       end
@@ -2758,11 +2788,11 @@ module H2gb
         @workspace.undo()
         @workspace.undo()
 
-        result = @workspace.get(block_name: 'aaaa', address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'aaaa', address: 0x00, length: 0x01, since:1)
         assert_equal('a!!', result[:entries][0][:comment])
         assert_equal('A'.bytes(), result[:entries][0][:raw])
 
-        result = @workspace.get(block_name: 'bbbb', address: 0x00, length: 0x01, since:0)
+        result = @workspace.get(block_name: 'bbbb', address: 0x00, length: 0x01, since:1)
         assert_equal('B!!', result[:entries][0][:comment])
         assert_equal('BBBB'.bytes(), result[:entries][0][:raw])
       end
@@ -2798,7 +2828,7 @@ module H2gb
             @workspace.set_comment(block_name: 'aaaa', address: 0x0000, comment: 'hi')
           end
           assert_raises(Error) do
-            @workspace.get(block_name: 'aaaa', address: 0x00, length: 0xFF, since:0)
+            @workspace.get(block_name: 'aaaa', address: 0x00, length: 0xFF, since:1)
           end
         end
       end

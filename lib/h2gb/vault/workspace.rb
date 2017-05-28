@@ -38,16 +38,8 @@ module H2gb
       DELETE_BLOCK = :delete_block
 
       public
-      def initialize(block_name:nil, raw:nil, base_address:0, hax_add_magic_block: true) # TODO: Get rid of magic
+      def initialize()
         @memory_blocks = {}
-
-        if hax_add_magic_block
-          @memory_blocks[block_name] = Memory::MemoryBlock.new(
-            name: block_name,
-            raw: raw,
-            base_address: base_address,
-          )
-        end
 
         @transactions = Memory::MemoryTransaction.new(opposites: {
           ENTRY_DEFINE => ENTRY_UNDEFINE,
@@ -71,7 +63,7 @@ module H2gb
       end
 
       public
-      def raw(block_name:nil)
+      def raw(block_name:)
         return @memory_blocks[block_name].raw
       end
 
@@ -224,7 +216,7 @@ module H2gb
       end
 
       public
-      def define(block_name:nil, address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
+      def define(block_name:, address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
         if !@in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
@@ -256,7 +248,7 @@ module H2gb
       end
 
       public
-      def undefine(block_name:nil, address:, length:1)
+      def undefine(block_name:, address:, length:1)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
@@ -273,7 +265,7 @@ module H2gb
       end
 
       public
-      def get_user_defined(block_name:nil, address:)
+      def get_user_defined(block_name:, address:)
         if @memory_blocks[block_name].nil?
           raise(Error, "Unknown memory block: %s" % block_name)
         end
@@ -286,7 +278,7 @@ module H2gb
       end
 
       public
-      def replace_user_defined(block_name:nil, address:, user_defined:)
+      def replace_user_defined(block_name:, address:, user_defined:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
@@ -322,7 +314,7 @@ module H2gb
       end
 
       public
-      def update_user_defined(block_name: nil, address:, user_defined:)
+      def update_user_defined(block_name:, address:, user_defined:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
@@ -335,7 +327,7 @@ module H2gb
       end
 
       public
-      def set_comment(block_name: nil, address:, comment:)
+      def set_comment(block_name:, address:, comment:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
@@ -348,7 +340,7 @@ module H2gb
       end
 
       public
-      def add_refs(block_name: nil, type:, from:, tos:)
+      def add_refs(block_name:, type:, from:, tos:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
@@ -361,7 +353,7 @@ module H2gb
       end
 
       public
-      def remove_refs(block_name: nil, type:, from:, tos:)
+      def remove_refs(block_name:, type:, from:, tos:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
@@ -395,7 +387,7 @@ module H2gb
       end
 
       public
-      def get(block_name:nil, address:, length: 1, since: -1)
+      def get(block_name:, address:, length: 1, since: -1)
         if @memory_blocks[block_name].nil?
           raise(Error, "Unknown memory block: %s" % block_name)
         end
@@ -431,8 +423,8 @@ module H2gb
       end
 
       public
-      def get_single(address:)
-        return get(address: address, length: 1, since: -1)[:entries].pop()
+      def get_single(block_name:, address:)
+        return get(block_name: block_name, address: address, length: 1, since: -1)[:entries].pop()
       end
 
       public
@@ -446,7 +438,7 @@ module H2gb
       end
 
       public
-      def get_all(block_name:nil)
+      def get_all(block_name:)
         if @memory_blocks[block_name].nil?
           raise(Error, "Unknown memory block: %s" % block_name)
         end
@@ -473,7 +465,7 @@ module H2gb
       end
 
       public
-      def to_s(block_name:nil)
+      def to_s(block_name:)
         if @memory_blocks[block_name].nil?
           raise(Error, "Unknown memory block: %s" % block_name)
         end

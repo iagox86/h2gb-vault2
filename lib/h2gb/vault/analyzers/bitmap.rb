@@ -23,9 +23,9 @@ module H2gb
       IN = :raw
       OUT = :parsed_bmp
 
-      def initialize(memory) # TODO: Make this a named parameter to match the style elsewhere
-        @memory = memory
-        @updater = Updater.new(memory: @memory)
+      def initialize(workspace:)
+        @workspace = workspace
+        @updater = Updater.new(workspace: @workspace)
       end
 
       def analyze()
@@ -43,7 +43,7 @@ module H2gb
         ])
 
         # Validate fields in the bitmap header
-        header = @memory.get_value(address: 0x0000)
+        header = @workspace.get_value(address: 0x0000)
         if header != 0x424d
           @updater.do([
             { action: :set_comment, address: 0x0000, comment: 'BMP header (invalid)' },
@@ -52,8 +52,8 @@ module H2gb
         end
 
         # Validate the file size
-        file_size = @memory.get_value(address: 0x0002)
-        if file_size != @memory.raw.length()
+        file_size = @workspace.get_value(address: 0x0002)
+        if file_size != @workspace.raw.length()
           @updater.do([
             { action: :set_comment, address: 0x0000, comment: 'File size (invalid)' },
             { action: :update_user_defined, address: 0x0000, user_defined: { error: warning, error_text: "Doesn't match the file's actual size!" } },
@@ -61,7 +61,7 @@ module H2gb
         end
 
         # Different lengths mean a different pixel structure
-        dib_length = @memory.get_value(address: 0x000e)
+        dib_length = @workspace.get_value(address: 0x000e)
 
         # TODO: Use this as an excuse to implement array, struct, and enum support
         if dib_length == 12
@@ -138,13 +138,13 @@ module H2gb
         end
 
         # Raw pixels
-        pixel_offset = @memory.get_value(address: 0x000a)
+        pixel_offset = @workspace.get_value(address: 0x000a)
         # TODO: This hardcoded offset won't work if I implement other bitmap types
-        bits_per_pixel = @memory.get_value(address: 0x001c)
+        bits_per_pixel = @workspace.get_value(address: 0x001c)
 
         if bits_per_pixel == 24
           updates = []
-          pixel_offset.step(@memory.raw.length() - 1, 3) do |i|
+          pixel_offset.step(@workspace.raw.length() - 1, 3) do |i|
             updates << { action: :define_basic_type, address: i, type: :rgb, options: { endian: :little }}
           end
 

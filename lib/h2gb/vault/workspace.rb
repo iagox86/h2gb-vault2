@@ -19,7 +19,7 @@ require 'h2gb/vault/memory/memory_transaction'
 
 module H2gb
   module Vault
-    class Memory
+    module Memory
       class Workspace
         attr_reader :transactions, :memory_block
 

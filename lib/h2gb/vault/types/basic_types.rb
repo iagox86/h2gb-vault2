@@ -10,7 +10,7 @@
 ##
 
 require 'h2gb/vault/error'
-require 'h2gb/vault/memory/workspace'
+require 'h2gb/vault/workspace'
 
 module H2gb
   module Vault

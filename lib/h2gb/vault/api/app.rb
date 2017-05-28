@@ -15,7 +15,7 @@ require 'sinatra'
 
 $LOAD_PATH.unshift File.expand_path('../../../../', __FILE__)
 
-require 'h2gb/vault/memory/workspace'
+require 'h2gb/vault/workspace'
 require 'h2gb/vault/analyzers/bitmap'
 require 'h2gb/vault/analyzers/code'
 

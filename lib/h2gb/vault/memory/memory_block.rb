@@ -10,11 +10,12 @@
 ##
 
 require 'h2gb/vault/error'
+require 'h2gb/vault/memory/memory_entry'
 require 'h2gb/vault/memory/memory_refs'
 
 module H2gb
   module Vault
-    class Memory
+    module Memory
       class MemoryBlock
         attr_reader :raw, :base_address, :name
 

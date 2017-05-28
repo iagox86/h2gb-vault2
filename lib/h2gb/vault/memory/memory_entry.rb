@@ -13,7 +13,7 @@ require 'h2gb/vault/error'
 
 module H2gb
   module Vault
-    class Memory
+    module Memory
       class MemoryEntry
         attr_reader :address, :type, :value, :length, :user_defined, :comment
 

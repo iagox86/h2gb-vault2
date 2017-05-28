@@ -14,7 +14,7 @@
 # is super well understood!
 ##
 
-require 'h2gb/vault/memory/workspace'
+require 'h2gb/vault/workspace'
 require 'h2gb/vault/types/updater'
 
 module H2gb

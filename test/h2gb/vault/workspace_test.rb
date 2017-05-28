@@ -1,6 +1,6 @@
 require 'test_helper'
 
-require 'h2gb/vault/memory/workspace'
+require 'h2gb/vault/workspace'
 
 # Generate a nice simple test memory map
 RAW = (0..255).to_a().map() { |b| b.chr() }.join()

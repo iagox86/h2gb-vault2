@@ -38,15 +38,16 @@ module H2gb
       DELETE_BLOCK = :delete_block
 
       public
-      def initialize(block_name:nil, raw:, base_address:0)
-        # Create an initial memory_block
-        # TODO: This is for compatibility, I'm going to get rid of it
+      def initialize(block_name:nil, raw:, base_address:0, hax_add_magic_block: true) # TODO: Get rid of magic
         @memory_blocks = {}
-        @memory_blocks[block_name] = Memory::MemoryBlock.new(
-          name: block_name,
-          raw: raw,
-          base_address: base_address,
-        )
+
+        if hax_add_magic_block
+          @memory_blocks[block_name] = Memory::MemoryBlock.new(
+            name: block_name,
+            raw: raw,
+            base_address: base_address,
+          )
+        end
 
         @transactions = Memory::MemoryTransaction.new(opposites: {
           ENTRY_DEFINE => ENTRY_UNDEFINE,
@@ -384,6 +385,11 @@ module H2gb
 
           return result
         end
+      end
+
+      public
+      def get_block_names()
+        return @memory_blocks.keys()
       end
 
       public

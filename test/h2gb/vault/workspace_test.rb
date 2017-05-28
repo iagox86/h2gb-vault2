@@ -5,10 +5,11 @@ require 'h2gb/vault/workspace'
 # Generate a nice simple test memory map
 RAW = (0..255).to_a().map() { |b| b.chr() }.join()
 
-def _test_define(memory:, address:, type: :type, value: "value", length:, refs: {}, user_defined: {}, comment: nil, do_transaction: true)
+def _test_define(block_name: nil, workspace:, address:, type: :type, value: "value", length:, refs: {}, user_defined: {}, comment: nil, do_transaction: true)
   if do_transaction
-    memory.transaction() do
-      memory.define(
+    workspace.transaction() do
+      workspace.define(
+        block_name: block_name,
         address: address,
         type: type,
         value: value,
@@ -19,7 +20,8 @@ def _test_define(memory:, address:, type: :type, value: "value", length:, refs: 
       )
     end
   else
-    memory.define(
+    workspace.define(
+      block_name: block_name,
       address: address,
       type: type,
       value: value,
@@ -31,13 +33,13 @@ def _test_define(memory:, address:, type: :type, value: "value", length:, refs: 
   end
 end
 
-def _test_undefine(memory:, address:, length:, do_transaction:true)
+def _test_undefine(block_name:nil, workspace:, address:, length:, do_transaction:true)
   if do_transaction
-    memory.transaction() do
-      memory.undefine(address: address, length: length)
+    workspace.transaction() do
+      workspace.undefine(block_name: block_name, address: address, length: length)
     end
   else
-    memory.undefine(address: address, length: length)
+    workspace.undefine(block_name: block_name, address: address, length: length)
   end
 end
 
@@ -58,7 +60,7 @@ module H2gb
       end
 
       def test_single_entry()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001)
 
         result = @workspace.get(address: 0x00, length: 0x01, since:0)
         expected = {
@@ -72,7 +74,7 @@ module H2gb
       end
 
       def test_get_longer_entry()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0008)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0008)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -86,7 +88,7 @@ module H2gb
       end
 
       def test_get_entry_in_middle()
-        _test_define(memory: @workspace, address: 0x0080, length: 0x0004)
+        _test_define(workspace: @workspace, address: 0x0080, length: 0x0004)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -100,8 +102,8 @@ module H2gb
       end
 
       def test_two_adjacent()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002)
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002)
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
 
@@ -118,8 +120,8 @@ module H2gb
 
       def test_two_adjacent_in_same_transaction()
         @workspace.transaction do
-          _test_define(memory: @workspace, address: 0x0000, length: 0x0002, do_transaction: false)
-          _test_define(memory: @workspace, address: 0x0002, length: 0x0002, do_transaction: false)
+          _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, do_transaction: false)
+          _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, do_transaction: false)
         end
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
@@ -136,8 +138,8 @@ module H2gb
       end
 
       def test_two_not_adjacent()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002)
-        _test_define(memory: @workspace, address: 0x0080, length: 0x0002)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002)
+        _test_define(workspace: @workspace, address: 0x0080, length: 0x0002)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
 
@@ -153,8 +155,8 @@ module H2gb
       end
 
       def test_overwrite()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'B'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -168,8 +170,8 @@ module H2gb
       end
 
       def test_overwrite_by_shorter()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'B'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -186,8 +188,8 @@ module H2gb
       end
 
       def test_overwrite_middle()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0008, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0008, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'B'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -207,9 +209,9 @@ module H2gb
       end
 
       def test_overwrite_multiple()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -225,9 +227,9 @@ module H2gb
       end
 
       def test_overwrite_multiple_with_gap()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0010, length: 0x0010, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0080, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0010, length: 0x0010, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0080, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -241,7 +243,7 @@ module H2gb
       end
 
       def test_refs()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, refs: { code: [0x10], data: [0x20] })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, refs: { code: [0x10], data: [0x20] })
 
         result = @workspace.get(address: 0x00, length: 0xFF, since:0)
         expected = {
@@ -257,8 +259,8 @@ module H2gb
       end
 
       def test_undefine()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002)
-        _test_undefine(memory: @workspace, address: 0x0000, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002)
+        _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since:0)
         expected = {
@@ -273,11 +275,11 @@ module H2gb
       end
 
       def test_undefine_multiple()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001)
-        _test_define(memory: @workspace, address: 0x0001, length: 0x0002)
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002)
-        _test_define(memory: @workspace, address: 0x0007, length: 0x0002)
-        _test_undefine(memory: @workspace, address: 1, length: 4)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0001, length: 0x0002)
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002)
+        _test_define(workspace: @workspace, address: 0x0007, length: 0x0002)
+        _test_undefine(workspace: @workspace, address: 1, length: 4)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since:0)
         expected = {
@@ -296,8 +298,8 @@ module H2gb
       end
 
       def test_undefine_refs()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, refs: {code: [0x10], data: [0x20]})
-        _test_undefine(memory: @workspace, address: 0x0000, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, refs: {code: [0x10], data: [0x20]})
+        _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since:0)
         expected = {
@@ -314,14 +316,14 @@ module H2gb
 
       def test_define_invalid()
         assert_raises(Error) do
-          _test_define(memory: @workspace, address: 0x0100, length: 0x01)
+          _test_define(workspace: @workspace, address: 0x0100, length: 0x01)
         end
       end
 
       # I accidentally created a bug by doing this in the API, so making sure I test for it
       def test_define_invalid_refs_string()
         assert_raises(Error) do
-          _test_define(memory: @workspace, address: 0x0000, length: 0x0001, refs: {code: [nil]})
+          _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, refs: {code: [nil]})
         end
       end
     end
@@ -337,13 +339,13 @@ module H2gb
 
       def test_add_transaction()
         assert_raises(Error) do
-          _test_define(memory: @workspace, address: 0x0000, length: 0x0002, do_transaction: false)
+          _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, do_transaction: false)
         end
       end
 
       def test_undefine_transaction()
         assert_raises(Error) do
-          _test_undefine(memory: @workspace, address: 0x0000, length: 0x0002, do_transaction: false)
+          _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0002, do_transaction: false)
         end
       end
 
@@ -365,7 +367,7 @@ module H2gb
       end
 
       def test_delete_nothing()
-        _test_undefine(memory: @workspace, address: 0x00, length: 0xFF)
+        _test_undefine(workspace: @workspace, address: 0x00, length: 0xFF)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
 
@@ -377,8 +379,8 @@ module H2gb
       end
 
       def test_delete_one_byte()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'A'} )
-        _test_undefine(memory: @workspace, address: 0x0000, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'A'} )
+        _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -392,8 +394,8 @@ module H2gb
       end
 
       def test_delete_multi_bytes()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
-        _test_undefine(memory: @workspace, address: 0, length: 1)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
+        _test_undefine(workspace: @workspace, address: 0, length: 1)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -410,8 +412,8 @@ module H2gb
       end
 
       def test_delete_zero_bytes()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0010, user_defined: { test: 'A'} )
-        _test_undefine(memory: @workspace, address: 8, length: 0)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0010, user_defined: { test: 'A'} )
+        _test_undefine(workspace: @workspace, address: 8, length: 0)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -425,8 +427,8 @@ module H2gb
       end
 
       def test_delete_just_start()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
-        _test_undefine(memory: @workspace, address: 0000, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
+        _test_undefine(workspace: @workspace, address: 0000, length: 0x0001)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -443,8 +445,8 @@ module H2gb
       end
 
       def test_delete_just_middle()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
-        _test_undefine(memory: @workspace, address: 0002, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
+        _test_undefine(workspace: @workspace, address: 0002, length: 0x0001)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -461,10 +463,10 @@ module H2gb
       end
 
       def test_delete_multiple_entries()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
-        _test_undefine(memory: @workspace, address: 0x0000, length: 0xFF)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
+        _test_undefine(workspace: @workspace, address: 0x0000, length: 0xFF)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -489,10 +491,10 @@ module H2gb
       end
 
       def test_delete_but_leave_adjacent()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
-        _test_undefine(memory: @workspace, address: 0x0004, length: 0x04)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
+        _test_undefine(workspace: @workspace, address: 0x0004, length: 0x04)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -511,11 +513,11 @@ module H2gb
       end
 
       def test_delete_multi_but_leave_adjacent()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
-        _test_define(memory: @workspace, address: 0x000c, length: 0x0004, user_defined: { test: 'D'} )
-        _test_undefine(memory: @workspace, address: 0x0004, length: 0x08)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x000c, length: 0x0004, user_defined: { test: 'D'} )
+        _test_undefine(workspace: @workspace, address: 0x0004, length: 0x08)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -544,8 +546,8 @@ module H2gb
       end
 
       def test_basic_undo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
 
         @workspace.undo()
 
@@ -563,9 +565,9 @@ module H2gb
       end
 
       def test_undo_multiple_steps()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -622,10 +624,10 @@ module H2gb
       end
 
       def test_undo_then_set()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
         @workspace.undo()
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -646,8 +648,8 @@ module H2gb
       # another undo.
       ##
       def test_undo_across_other_undos()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
 
         @workspace.undo() # undo B
 
@@ -662,7 +664,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -709,12 +711,12 @@ module H2gb
       end
 
       def test_undo_then_set_then_undo_again()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
 
         @workspace.undo()
 
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -744,7 +746,7 @@ module H2gb
       end
 
       def test_undo_too_much()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
 
         @workspace.undo()
         @workspace.undo()
@@ -753,7 +755,7 @@ module H2gb
         @workspace.undo()
         @workspace.undo()
 
-        _test_define(memory: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'B'} )
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
 
         expected = {
@@ -768,8 +770,8 @@ module H2gb
       end
 
       def test_undo_overwrite()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'B'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -795,13 +797,13 @@ module H2gb
 
       def test_transaction_undo()
         @workspace.transaction() do
-          _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'}, do_transaction: false )
-          _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'}, do_transaction: false )
+          _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'}, do_transaction: false )
+          _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'}, do_transaction: false )
         end
 
         @workspace.transaction() do
-          _test_define(memory: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'C'}, do_transaction: false )
-          _test_define(memory: @workspace, address: 0x0003, length: 0x0002, user_defined: { test: 'D'}, do_transaction: false )
+          _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'C'}, do_transaction: false )
+          _test_define(workspace: @workspace, address: 0x0003, length: 0x0002, user_defined: { test: 'D'}, do_transaction: false )
         end
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
@@ -839,8 +841,8 @@ module H2gb
       end
 
       def test_repeat_undo_redo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'B'} )
 
         @workspace.undo()
 
@@ -917,8 +919,8 @@ module H2gb
       end
 
       def test_basic_redo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
         @workspace.undo()
         @workspace.redo()
 
@@ -936,9 +938,9 @@ module H2gb
       end
 
       def test_redo_multiple_steps()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
         @workspace.undo()
         @workspace.undo()
@@ -999,11 +1001,11 @@ module H2gb
       end
 
       def test_redo_then_set()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
         @workspace.undo()
         @workspace.redo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
 
@@ -1023,8 +1025,8 @@ module H2gb
       # another undo.
       ##
       def test_redo_across_other_undos()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
 
         @workspace.undo() # undo B
 
@@ -1039,7 +1041,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1128,9 +1130,9 @@ module H2gb
       end
 
       def test_redo_goes_away_after_edit()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'C'} )
 
         @workspace.undo()
         @workspace.undo()
@@ -1164,7 +1166,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        _test_define(memory: @workspace, address: 0x0006, length: 0x0002, user_defined: { test: 'D'} )
+        _test_define(workspace: @workspace, address: 0x0006, length: 0x0002, user_defined: { test: 'D'} )
 
         @workspace.redo() # Should do nothing
 
@@ -1184,7 +1186,7 @@ module H2gb
       end
 
       def test_redo_too_much()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
         @workspace.undo()
         @workspace.undo()
         @workspace.redo()
@@ -1192,7 +1194,7 @@ module H2gb
         @workspace.redo()
         @workspace.redo()
 
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
 
         expected = {
@@ -1207,9 +1209,9 @@ module H2gb
       end
 
       def test_redo_overwrite()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'B'} )
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0003, user_defined: { test: 'C'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'B'} )
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0003, user_defined: { test: 'C'} )
 
         @workspace.undo()
         @workspace.undo()
@@ -1230,15 +1232,15 @@ module H2gb
 
       def test_transaction_redo()
         @workspace.transaction() do
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'}, do_transaction: false)
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'}, do_transaction: false)
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'C'}, do_transaction: false)
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'D'}, do_transaction: false)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'}, do_transaction: false)
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'}, do_transaction: false)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'C'}, do_transaction: false)
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'D'}, do_transaction: false)
         end
 
         @workspace.transaction() do
-        _test_define(memory: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'E'}, do_transaction: false)
-        _test_define(memory: @workspace, address: 0x0006, length: 0x0002, user_defined: { test: 'F'}, do_transaction: false)
+        _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'E'}, do_transaction: false)
+        _test_define(workspace: @workspace, address: 0x0006, length: 0x0002, user_defined: { test: 'F'}, do_transaction: false)
         end
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
@@ -1286,7 +1288,7 @@ module H2gb
 
 
       def test_get_from_minus_one()
-        _test_define(memory: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'A'})
 
         result = @workspace.get(address: 0x00, length: 0x04, since: -1)
         expected = {
@@ -1302,7 +1304,7 @@ module H2gb
       end
 
       def test_add_one()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, user_defined: { test: 'A'})
 
         result = @workspace.get(address: 0x00, length: 0x10, since: 0)
         expected = {
@@ -1316,9 +1318,9 @@ module H2gb
       end
 
       def test_add_multiple()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'})
 
         result = @workspace.get(address: 0x00, length: 0x10, since: 0)
         expected = {
@@ -1359,9 +1361,9 @@ module H2gb
       end
 
       def test_overwrite()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'C'})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'C'})
 
         result = @workspace.get(address: 0x00, length: 0x10, since: 0)
         expected = {
@@ -1409,9 +1411,9 @@ module H2gb
       end
 
       def test_undo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'B'})
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0002, user_defined: { test: 'C'})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0002, user_defined: { test: 'B'})
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0002, user_defined: { test: 'C'})
         @workspace.undo()
         @workspace.undo()
         @workspace.undo()
@@ -1475,9 +1477,9 @@ module H2gb
       end
 
       def test_redo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'})
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0002, user_defined: { test: 'C'})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'})
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0002, user_defined: { test: 'C'})
         @workspace.undo()
         @workspace.undo()
         @workspace.undo()
@@ -1538,8 +1540,8 @@ module H2gb
       end
 
       def test_basic_xref()
-       _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-       _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000]})
+       _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+       _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000]})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1553,8 +1555,8 @@ module H2gb
       end
 
       def test_different_xref_types()
-       _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-       _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {data: [0x0000], code: [0x0000, 0x0004]})
+       _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+       _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {data: [0x0000], code: [0x0000, 0x0004]})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1568,8 +1570,8 @@ module H2gb
       end
 
       def test_xref_to_middle()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0002]})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0002]})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1583,8 +1585,8 @@ module H2gb
       end
 
       def test_multiple_same_refs()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0000, 0x0002]})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0000, 0x0002]})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1598,9 +1600,9 @@ module H2gb
       end
 
       def test_multiple_refs()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {})
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {})
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1615,9 +1617,9 @@ module H2gb
       end
 
       def test_multiple_xrefs()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0008]})
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0008]})
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1632,8 +1634,8 @@ module H2gb
       end
 
       def test_self_ref()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0000]})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0005]})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0000]})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0005]})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1647,8 +1649,8 @@ module H2gb
       end
 
       def test_overwrite_self_ref()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0000]})
-        _test_define(memory: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0002]})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0000]})
+        _test_define(workspace: @workspace, address: 0x0002, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0002]})
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1663,11 +1665,11 @@ module H2gb
       end
 
       def test_delete_ref()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0002, 0x000a]})
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0008, 0x0009]})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0000, 0x0002, 0x000a]})
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: {})
 
-        _test_undefine(memory: @workspace, address: 0x0000, length: 0x01)
+        _test_undefine(workspace: @workspace, address: 0x0000, length: 0x01)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1685,10 +1687,10 @@ module H2gb
       end
 
       def test_xref_after_undos_and_redos()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009]})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a]})
-        _test_define(memory: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: { code: [0x0007]})
-        _test_undefine(memory: @workspace, address: 0x0000, length: 0x0001)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0008, 0x0009]})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0000, 0x0002, 0x000a]})
+        _test_define(workspace: @workspace, address: 0x0008, length: 0x0004, user_defined: { test: 'C'}, refs: { code: [0x0007]})
+        _test_undefine(workspace: @workspace, address: 0x0000, length: 0x0001)
 
         result = @workspace.get(address: 0x00, length: 0xFF, since: 0)
         expected = {
@@ -1840,9 +1842,9 @@ module H2gb
       end
 
       def test_xref_with_since()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0005]})
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0004]})
-        _test_define(memory: @workspace, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, refs: {code: [0x0005, 0x000a]})
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: {code: [0x0004, 0x0005]})
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: {code: [0x0004]})
+        _test_define(workspace: @workspace, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, refs: {code: [0x0005, 0x000a]})
 
         result = @workspace.get(address: 0x00, length: 0x10, since: 0)
         expected = {
@@ -1970,8 +1972,8 @@ module H2gb
       end
 
       def test_add_refs()
-       _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-       _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
+       _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+       _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'})
        @workspace.transaction do
          @workspace.add_refs(type: :code, from: 0x0004, tos: [0x0000])
        end
@@ -1988,8 +1990,8 @@ module H2gb
       end
 
       def test_remove_refs()
-       _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
-       _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0000]} )
+       _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'})
+       _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0000]} )
        @workspace.transaction do
          @workspace.remove_refs(type: :code, from: 0x0004, tos: [0x0000])
        end
@@ -2008,17 +2010,17 @@ module H2gb
 
     class SaveRestoreTest < Test::Unit::TestCase
       def test_save_load()
-        memory = Workspace.new(raw: RAW)
+        workspace = Workspace.new(raw: RAW)
 
-        _test_define(memory: memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] })
-        _test_define(memory: memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0004] })
-        _test_define(memory: memory, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] })
+        _test_define(workspace: workspace, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] })
+        _test_define(workspace: workspace, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0004] })
+        _test_define(workspace: workspace, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] })
 
         # Save/load throughout this function to make sure it's working right
-        memory = Workspace.load(memory.dump())
-        assert_not_nil(memory)
+        workspace = Workspace.load(workspace.dump())
+        assert_not_nil(workspace)
 
-        result = memory.get(address: 0x00, length: 0x10, since: 0)
+        result = workspace.get(address: 0x00, length: 0x10, since: 0)
         expected = {
           revision: 0x03,
           entries: [
@@ -2030,7 +2032,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = memory.get(address: 0x00, length: 0x10, since: 1)
+        result = workspace.get(address: 0x00, length: 0x10, since: 1)
         expected = {
           revision: 0x03,
           entries: [
@@ -2041,7 +2043,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = memory.get(address: 0x00, length: 0x10, since: 2)
+        result = workspace.get(address: 0x00, length: 0x10, since: 2)
         expected = {
           revision: 0x03,
           entries: [
@@ -2052,11 +2054,11 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        memory.undo()
-        memory.undo()
-        memory.undo()
+        workspace.undo()
+        workspace.undo()
+        workspace.undo()
 
-        result = memory.get(address: 0x00, length: 0x10, since: 3)
+        result = workspace.get(address: 0x00, length: 0x10, since: 3)
         expected = {
           revision: 0x06,
           entries: [
@@ -2074,7 +2076,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = memory.get(address: 0x00, length: 0x10, since: 4)
+        result = workspace.get(address: 0x00, length: 0x10, since: 4)
         expected = {
           revision: 0x06,
           entries: [
@@ -2090,7 +2092,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = memory.get(address: 0x00, length: 0x10, since: 5)
+        result = workspace.get(address: 0x00, length: 0x10, since: 5)
         expected = {
           revision: 0x06,
           entries: [
@@ -2104,11 +2106,11 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        memory.redo()
-        memory.redo()
-        memory.redo()
+        workspace.redo()
+        workspace.redo()
+        workspace.redo()
 
-        result = memory.get(address: 0x00, length: 0x10, since: 6)
+        result = workspace.get(address: 0x00, length: 0x10, since: 6)
         expected = {
           revision: 0x09,
           entries: [
@@ -2120,7 +2122,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = memory.get(address: 0x00, length: 0x10, since: 7)
+        result = workspace.get(address: 0x00, length: 0x10, since: 7)
         expected = {
           revision: 0x09,
           entries: [
@@ -2131,7 +2133,7 @@ module H2gb
         }
         assert_equal(expected, result)
 
-        result = memory.get(address: 0x00, length: 0x10, since: 8)
+        result = workspace.get(address: 0x00, length: 0x10, since: 8)
         expected = {
           revision: 0x09,
           entries: [
@@ -2156,7 +2158,7 @@ module H2gb
       end
 
       def test_replace()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         result = @workspace.get(address: 0x00, length: 0x01, since:0)
         expected = {
@@ -2182,7 +2184,7 @@ module H2gb
       end
 
       def test_update()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         result = @workspace.get(address: 0x00, length: 0x01, since:0)
         expected = {
@@ -2208,7 +2210,7 @@ module H2gb
       end
 
       def test_replace_undo_redo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         result = @workspace.get(address: 0x00, length: 0x01, since:0)
         expected = {
@@ -2256,7 +2258,7 @@ module H2gb
       end
 
       def test_update_undo_redo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         result = @workspace.get(address: 0x00, length: 0x01, since:0)
         expected = {
@@ -2304,8 +2306,8 @@ module H2gb
       end
 
       def test_update_since()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
-        _test_define(memory: @workspace, address: 0x0004, length: 0x0004, user_defined: { test2: "B" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0004, length: 0x0004, user_defined: { test2: "B" })
 
         result = @workspace.get(address: 0x00, length: 0xFF, since:0)
         expected = {
@@ -2353,7 +2355,7 @@ module H2gb
       end
 
       def test_replace_with_non_hash()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         @workspace.transaction() do
           assert_raises(Error) do
@@ -2363,7 +2365,7 @@ module H2gb
       end
 
       def test_replace_in_middle()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         result = @workspace.get(address: 0x00, length: 0x01, since:0)
         expected = {
@@ -2389,7 +2391,7 @@ module H2gb
       end
 
       def test_replace_no_entry()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         @workspace.transaction() do
           @workspace.replace_user_defined(address: 0x0008, user_defined: { test2: "B" })
@@ -2431,7 +2433,7 @@ module H2gb
       end
 
       def test_update_no_entry()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0004, user_defined: { test: "A" })
 
         @workspace.transaction() do
           @workspace.update_user_defined(address: 0x0008, user_defined: { test2: "B" })
@@ -2479,7 +2481,7 @@ module H2gb
       end
 
       def test_set_comment()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, comment: nil)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: nil)
         @workspace.transaction() do
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
@@ -2496,7 +2498,7 @@ module H2gb
       end
 
       def test_change_comment()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
         @workspace.transaction() do
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
@@ -2513,7 +2515,7 @@ module H2gb
       end
 
       def test_remove_comment()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
         @workspace.transaction() do
           @workspace.set_comment(address: 0x0000, comment: nil)
         end
@@ -2530,7 +2532,7 @@ module H2gb
       end
 
       def test_change_comment_undo_redo()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
         @workspace.transaction() do
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
@@ -2605,7 +2607,7 @@ module H2gb
       end
 
       def test_change_comment_updates_revision()
-        _test_define(memory: @workspace, address: 0x0000, length: 0x0001, comment: nil)
+        _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: nil)
         @workspace.transaction() do
           @workspace.set_comment(address: 0x0000, comment: 'blahblah')
         end
@@ -2619,6 +2621,169 @@ module H2gb
         }
 
         assert_equal(expected, result)
+      end
+    end
+
+    class CreateDeleteBlockTest < Test::Unit::TestCase
+      def setup()
+        @workspace = Workspace.new(hax_add_magic_block: false)
+      end
+
+      def test_create_block()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', raw: RAW)
+        end
+        assert_equal(['test'], @workspace.get_block_names())
+
+        _test_define(block_name: 'test', workspace: @workspace, address: 0x0000, length: 0x0001)
+
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:0)
+        expected = {
+          revision: 0x02,
+          entries: [
+            TestHelper.test_entry(address: 0x00, length: 0x01, raw: [0x00])
+          ]
+        }
+
+        assert_equal(expected, result)
+      end
+
+      def test_create_multiple_blocks()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'aaaa', raw: "A" * 16)
+          @workspace.create_block(block_name: 'bbbb', raw: "B" * 16)
+        end
+        assert_equal(['aaaa', 'bbbb'], @workspace.get_block_names().sort())
+
+        _test_define(block_name: 'aaaa', workspace: @workspace, address: 0x0000, length: 0x0001, comment: "a!!")
+        _test_define(block_name: 'bbbb', workspace: @workspace, address: 0x0000, length: 0x0004, comment: "B!!")
+
+        result = @workspace.get(block_name: 'aaaa', address: 0x00, length: 0x01, since:0)
+        assert_equal('a!!', result[:entries][0][:comment])
+        assert_equal('A'.bytes(), result[:entries][0][:raw])
+
+        result = @workspace.get(block_name: 'bbbb', address: 0x00, length: 0x01, since:0)
+        assert_equal('B!!', result[:entries][0][:comment])
+        assert_equal('BBBB'.bytes(), result[:entries][0][:raw])
+      end
+
+      def test_delete_blocks()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'aaaa', raw: "A" * 16)
+          @workspace.create_block(block_name: 'bbbb', raw: "B" * 16)
+        end
+        assert_equal(['aaaa', 'bbbb'], @workspace.get_block_names().sort())
+
+        @workspace.transaction() do
+          @workspace.delete_block(block_name: 'aaaa')
+        end
+        assert_equal(['bbbb'], @workspace.get_block_names().sort())
+
+        @workspace.transaction() do
+          @workspace.delete_block(block_name: 'bbbb')
+        end
+        assert_equal([], @workspace.get_block_names().sort())
+      end
+
+      def test_undo_redo()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'aaaa', raw: "A" * 16)
+        end
+        assert_equal(['aaaa'], @workspace.get_block_names().sort())
+
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'bbbb', raw: "B" * 16)
+        end
+        assert_equal(['aaaa', 'bbbb'], @workspace.get_block_names().sort())
+
+        @workspace.transaction() do
+          @workspace.delete_block(block_name: 'aaaa')
+        end
+        assert_equal(['bbbb'], @workspace.get_block_names().sort())
+
+        @workspace.transaction() do
+          @workspace.delete_block(block_name: 'bbbb')
+        end
+        assert_equal([], @workspace.get_block_names().sort())
+
+        @workspace.undo()
+        assert_equal(['bbbb'], @workspace.get_block_names().sort())
+
+        @workspace.undo()
+        assert_equal(['aaaa', 'bbbb'], @workspace.get_block_names().sort())
+
+        @workspace.undo()
+        assert_equal(['aaaa'], @workspace.get_block_names().sort())
+
+        @workspace.undo()
+        assert_equal([], @workspace.get_block_names().sort())
+      end
+
+      def test_undo_redo_with_entries()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'aaaa', raw: "A" * 16)
+        end
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'bbbb', raw: "B" * 16)
+        end
+        assert_equal(['aaaa', 'bbbb'], @workspace.get_block_names().sort())
+
+        _test_define(block_name: 'aaaa', workspace: @workspace, address: 0x0000, length: 0x0001, comment: "a!!")
+        _test_define(block_name: 'bbbb', workspace: @workspace, address: 0x0000, length: 0x0004, comment: "B!!")
+
+        @workspace.transaction() do
+          @workspace.delete_block(block_name: 'aaaa')
+        end
+        @workspace.transaction() do
+          @workspace.delete_block(block_name: 'bbbb')
+        end
+
+        @workspace.undo()
+        @workspace.undo()
+
+        result = @workspace.get(block_name: 'aaaa', address: 0x00, length: 0x01, since:0)
+        assert_equal('a!!', result[:entries][0][:comment])
+        assert_equal('A'.bytes(), result[:entries][0][:raw])
+
+        result = @workspace.get(block_name: 'bbbb', address: 0x00, length: 0x01, since:0)
+        assert_equal('B!!', result[:entries][0][:comment])
+        assert_equal('BBBB'.bytes(), result[:entries][0][:raw])
+      end
+
+      def test_handle_no_such_block()
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'aaaa', raw: "A" * 16)
+        end
+        @workspace.transaction() do
+          @workspace.delete_block(block_name: 'aaaa')
+        end
+
+        @workspace.transaction() do
+          assert_raises(Error) do
+            @workspace.delete_block(block_name: 'aaaa')
+          end
+          assert_raises(Error) do
+            _test_define(block_name: 'aaaa', workspace: @workspace, address: 0x0000, length: 0x0001, do_transaction: false)
+          end
+          assert_raises(Error) do
+            _test_undefine(block_name: 'aaaa', workspace: @workspace, address: 0x0000, length: 0x0001, do_transaction: false)
+          end
+          assert_raises(Error) do
+            @workspace.get_user_defined(block_name: 'aaaa', address: 0x0000)
+          end
+          assert_raises(Error) do
+            @workspace.replace_user_defined(block_name: 'aaaa', address: 0x0000, user_defined: {})
+          end
+          assert_raises(Error) do
+            @workspace.update_user_defined(block_name: 'aaaa', address: 0x0000, user_defined: {})
+          end
+          assert_raises(Error) do
+            @workspace.set_comment(block_name: 'aaaa', address: 0x0000, comment: 'hi')
+          end
+          assert_raises(Error) do
+            @workspace.get(block_name: 'aaaa', address: 0x00, length: 0xFF, since:0)
+          end
+        end
       end
     end
   end

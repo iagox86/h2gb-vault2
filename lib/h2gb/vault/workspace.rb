@@ -38,7 +38,7 @@ module H2gb
       DELETE_BLOCK = :delete_block
 
       public
-      def initialize(block_name:nil, raw:, base_address:0, hax_add_magic_block: true) # TODO: Get rid of magic
+      def initialize(block_name:nil, raw:nil, base_address:0, hax_add_magic_block: true) # TODO: Get rid of magic
         @memory_blocks = {}
 
         if hax_add_magic_block
@@ -175,13 +175,19 @@ module H2gb
 
       private
       def _delete_block_internal(block_name:)
-        # Make sure everything is undefined first
         memory_block = @memory_blocks[block_name]
         if memory_block.nil?
-          raise("Trying to delete an unknown memory block!")
+          raise(Error, "Trying to delete an unknown memory block!")
         end
 
-        undefine(block_name: block_name, address: 0, length: memory_block.raw.length)
+        # Make sure everything is undefined first
+        memory_block.each_entry_in_range(address: 0, length: memory_block.raw.length) do |this_address, entry, raw, refs, xrefs|
+          # TODO: Move _remove_refs_internal() into _undefine_internal(), if we can?
+          refs.each_pair do |type, tos|
+            _remove_refs_internal(block_name: block_name, type: type, from: this_address, tos: tos)
+          end
+          _undefine_internal(block_name: block_name, entry: entry)
+        end
 
         @transactions.add_to_current_transaction(type: DELETE_BLOCK, entry: {
           block_name: block_name,
@@ -224,6 +230,9 @@ module H2gb
         if !@in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
         if !refs.is_a?(Hash)
           raise(Error, "refs must be a Hash!")
         end
@@ -253,6 +262,9 @@ module H2gb
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
 
         @memory_blocks[block_name].each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
           refs.each_pair do |type, tos|
@@ -264,6 +276,9 @@ module H2gb
 
       public
       def get_user_defined(block_name:nil, address:)
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
         entry = @memory_blocks.get(address: address)
         if entry.nil?
           return {}
@@ -276,6 +291,9 @@ module H2gb
       def replace_user_defined(block_name:nil, address:, user_defined:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
+        end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
         end
 
         entry, _ = @memory_blocks[block_name].get(address: address, define_by_default: false)
@@ -291,6 +309,9 @@ module H2gb
 
       public
       def _get_or_define_entry(block_name:, address:)
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
         entry, _ = @memory_blocks[block_name].get(address: address, define_by_default: false)
 
         # Automatically define the entry if it doesn't exist
@@ -307,6 +328,9 @@ module H2gb
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
 
         entry = _get_or_define_entry(block_name: block_name, address: address)
         _update_user_defined_internal(block_name: block_name, entry: entry, new_user_defined: entry.user_defined.merge(user_defined))
@@ -316,6 +340,9 @@ module H2gb
       def set_comment(block_name: nil, address:, comment:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
+        end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
         end
 
         entry = _get_or_define_entry(block_name: block_name, address: address)
@@ -327,6 +354,9 @@ module H2gb
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
 
         _get_or_define_entry(block_name: block_name, address: from)
         _add_refs_internal(block_name: block_name, type: type, from: from, tos: tos)
@@ -336,6 +366,9 @@ module H2gb
       def remove_refs(block_name: nil, type:, from:, tos:)
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
+        end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
         end
 
         _get_or_define_entry(block_name: block_name, address: from)
@@ -356,12 +389,19 @@ module H2gb
         if not @in_transaction
           raise(Error, "Must be wrapped in a transaction!")
         end
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
 
         _delete_block_internal(block_name: block_name)
       end
 
       public
       def get(block_name:nil, address:, length: 1, since: -1)
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
+
         @mutex.synchronize() do
           result = {
             revision: @transactions.revision,
@@ -409,6 +449,10 @@ module H2gb
 
       public
       def get_all(block_name:nil)
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
+
         return get(address: 0, length: @memory_blocks[block_name].raw.length, since: -1)
       end
 
@@ -432,6 +476,10 @@ module H2gb
 
       public
       def to_s(block_name:nil)
+        if @memory_blocks[block_name].nil?
+          raise(Error, "Unknown memory block: %s" % block_name)
+        end
+
         return [
           "Revision: %d" % @transactions.revision,
           "--",

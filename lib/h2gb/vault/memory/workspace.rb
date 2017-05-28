@@ -36,8 +36,15 @@ module H2gb
         REMOVE_REFS = :remove_refs
 
         public
-        def initialize(raw:)
-          @memory_block = MemoryBlock.new(raw: raw)
+        def initialize(name:nil, raw:, base_address:0)
+          # Create an initial memory_block
+          # TODO: This is for compatibility, I'm going to get rid ofi t
+          @memory_blocks[name] = MemoryBlock.new(
+            name: name,
+            raw: raw,
+            base_address: base_address,
+          )
+
           @transactions = MemoryTransaction.new(opposites: {
             ENTRY_DEFINE => ENTRY_UNDEFINE,
             ENTRY_UNDEFINE => ENTRY_DEFINE,
@@ -59,8 +66,12 @@ module H2gb
         end
 
         public
-        def raw()
-          return @memory_block.raw
+        def create(name:nil, base_address:0, raw:)
+        end
+
+        public
+        def raw(name:nil)
+          return @memory_block[name].raw
         end
 
         public
@@ -78,8 +89,8 @@ module H2gb
         end
 
         private
-        def _define_internal(entry:)
-          @memory_block.each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw, refs, xrefs|
+        def _define_internal(entry:, name:)
+          @memory_blocks[name].each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw, refs, xrefs|
             # Remove refs from the address
             refs.each_pair do |type, tos|
               _remove_refs_internal(type: type, from: this_address, tos: tos)
@@ -89,55 +100,55 @@ module H2gb
             _undefine_internal(entry: this_entry)
           end
 
-          @memory_block.define(entry: entry, revision: @transactions.revision)
+          @memory_blocks[name].define(entry: entry, revision: @transactions.revision)
 
           @transactions.add_to_current_transaction(type: ENTRY_DEFINE, entry: entry)
         end
 
         private
-        def _undefine_internal(entry:)
+        def _undefine_internal(entry:, name:)
           @transactions.add_to_current_transaction(type: ENTRY_UNDEFINE, entry: entry)
-          @memory_block.undefine(entry: entry, revision: @transactions.revision)
+          @memory_blocks[name].undefine(entry: entry, revision: @transactions.revision)
         end
 
         private
-        def _update_user_defined_internal(entry:, new_user_defined:)
+        def _update_user_defined_internal(entry:, new_user_defined:, name:)
           @transactions.add_to_current_transaction(type: UPDATE_USER_DEFINED_FORWARD, entry: {
             entry: entry,
             old_user_defined: entry.user_defined.clone(),
             new_user_defined: new_user_defined.clone(),
           })
-          @memory_block.update_user_defined(entry: entry, user_defined: new_user_defined, revision: @transactions.revision)
+          @memory_blocks[name].update_user_defined(entry: entry, user_defined: new_user_defined, revision: @transactions.revision)
         end
 
         private
-        def _set_comment_internal(entry:, new_comment:)
+        def _set_comment_internal(entry:, new_comment:, name:)
           @transactions.add_to_current_transaction(type: SET_COMMENT_FORWARD, entry: {
             entry: entry,
             old_comment: entry.comment,
             new_comment: new_comment,
           })
-          @memory_block.set_comment(entry: entry, comment: new_comment, revision: @transactions.revision)
+          @memory_blocks[name].set_comment(entry: entry, comment: new_comment, revision: @transactions.revision)
         end
 
         private
-        def _add_refs_internal(type:, from:, tos:)
+        def _add_refs_internal(type:, from:, tos:, name:)
           @transactions.add_to_current_transaction(type: ADD_REFS, entry: {
             type: type,
             from: from,
             tos:  tos,
           })
-          @memory_block.add_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
+          @memory_blocks[name].add_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
         end
 
         private
-        def _remove_refs_internal(type:, from:, tos:)
+        def _remove_refs_internal(type:, from:, tos:, name:)
           @transactions.add_to_current_transaction(type: REMOVE_REFS, entry: {
             type: type,
             from: from,
             tos:  tos,
           })
-          @memory_block.remove_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
+          @memory_blocks[name].remove_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
         end
 
         private
@@ -193,12 +204,12 @@ module H2gb
         end
 
         public
-        def undefine(address:, length:1)
+        def undefine(address:, length:1, name:nil)
           if not @in_transaction
             raise(Error, "Calls to undefine() must be wrapped in a transaction!")
           end
 
-          @memory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
+          @m, name:emory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
             refs.each_pair do |type, tos|
               _remove_refs_internal(type: type, from: this_address, tos: tos)
             end
@@ -207,8 +218,8 @@ module H2gb
         end
 
         public
-        def get_user_defined(address:)
-          entry = @memory_block.get(address: address)
+        def get_user_defined(address:, name:nil)
+          entry = @memory_blocks.get(address: address)
           if entry.nil?
             return {}
           end
@@ -217,16 +228,16 @@ module H2gb
         end
 
         public
-        def replace_user_defined(address:, user_defined:)
+        def replace_user_defined(address:, user_defined:, name:nil)
           if not @in_transaction
             raise(Error, "Calls to replace_user_defined() must be wrapped in a transaction!")
           end
 
-          entry, _ = @memory_block.get(address: address, define_by_default: false)
+          entry, _ = @memory_blocks[name].get(address: address, define_by_default: false)
 
           # Automatically define the entry if it doesn't exist
           if entry.nil?
-            entry = MemoryEntry.default(address: address, raw: @memory_block.raw[address].ord())
+            entry = MemoryEntry.default(address: address, raw: @memory_blocks[name].raw[address].ord())
             _define_internal(entry: entry)
           end
 
@@ -234,12 +245,12 @@ module H2gb
         end
 
         public
-        def _get_or_define_entry(address:)
-          entry, _ = @memory_block.get(address: address, define_by_default: false)
+        def _get_or_define_entry(address:, name:)
+          entry, _ = @memory_blocks[name].get(address: address, define_by_default: false)
 
           # Automatically define the entry if it doesn't exist
           if entry.nil?
-            entry = MemoryEntry.default(address: address, raw: @memory_block.raw[address].ord())
+            entry = MemoryEntry.default(address: address, raw: @memory_blocks[name].raw[address].ord())
             _define_internal(entry: entry)
           end
 
@@ -287,14 +298,14 @@ module H2gb
         end
 
         public
-        def get(address:, length: 1, since: -1)
+        def get(address:, length: 1, since: -1, name: nil)
           @mutex.synchronize() do
             result = {
               revision: @transactions.revision,
               entries: [],
             }
 
-            @memory_block.each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, refs, xrefs|
+            @memory_blocks[name].each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, refs, xrefs|
 
               result[:entries] << {
                 address:      this_address,
@@ -329,8 +340,8 @@ module H2gb
         end
 
         public
-        def get_all()
-          return get(address: 0, length: @memory_block.raw.length, since: -1)
+        def get_all(name:nil)
+          return get(address: 0, length: @memory_blocks[name].raw.length, since: -1)
         end
 
         public
@@ -352,7 +363,7 @@ module H2gb
         end
 
         public
-        def to_s()
+        def to_s(name:nil)
           return [
             "Revision: %d" % @transactions.revision,
             "--",

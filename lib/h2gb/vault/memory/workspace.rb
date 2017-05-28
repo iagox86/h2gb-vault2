@@ -36,11 +36,12 @@ module H2gb
         REMOVE_REFS = :remove_refs
 
         public
-        def initialize(name:nil, raw:, base_address:0)
+        def initialize(block_name:nil, raw:, base_address:0)
           # Create an initial memory_block
           # TODO: This is for compatibility, I'm going to get rid ofi t
-          @memory_blocks[name] = MemoryBlock.new(
-            name: name,
+          @memory_blocks = {}
+          @memory_blocks[block_name] = MemoryBlock.new(
+            name: block_name,
             raw: raw,
             base_address: base_address,
           )
@@ -66,12 +67,12 @@ module H2gb
         end
 
         public
-        def create(name:nil, base_address:0, raw:)
+        def create(block_name:nil, base_address:0, raw:)
         end
 
         public
-        def raw(name:nil)
-          return @memory_block[name].raw
+        def raw(block_name:nil)
+          return @memory_blocks[block_name].raw
         end
 
         public
@@ -89,93 +90,101 @@ module H2gb
         end
 
         private
-        def _define_internal(entry:, name:)
-          @memory_blocks[name].each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw, refs, xrefs|
+        def _define_internal(block_name:, entry:)
+          @memory_blocks[block_name].each_entry_in_range(address: entry.address, length: entry.length, include_undefined: false) do |this_address, this_entry, raw, refs, xrefs|
             # Remove refs from the address
             refs.each_pair do |type, tos|
-              _remove_refs_internal(type: type, from: this_address, tos: tos)
+              _remove_refs_internal(block_name: block_name, type: type, from: this_address, tos: tos)
             end
 
             # Remove any entry
-            _undefine_internal(entry: this_entry)
+            _undefine_internal(block_name: block_name, entry: this_entry)
           end
 
-          @memory_blocks[name].define(entry: entry, revision: @transactions.revision)
+          @memory_blocks[block_name].define(entry: entry, revision: @transactions.revision)
 
-          @transactions.add_to_current_transaction(type: ENTRY_DEFINE, entry: entry)
+          @transactions.add_to_current_transaction(type: ENTRY_DEFINE, entry: { block_name: block_name, entry: entry })
         end
 
         private
-        def _undefine_internal(entry:, name:)
-          @transactions.add_to_current_transaction(type: ENTRY_UNDEFINE, entry: entry)
-          @memory_blocks[name].undefine(entry: entry, revision: @transactions.revision)
+        def _undefine_internal(block_name:, entry:)
+          # TODO: I think we should always do the add_to_current_transaction() part last
+          @transactions.add_to_current_transaction(type: ENTRY_UNDEFINE, entry: {
+            block_name: block_name,
+            entry: entry
+          })
+          @memory_blocks[block_name].undefine(entry: entry, revision: @transactions.revision)
         end
 
         private
-        def _update_user_defined_internal(entry:, new_user_defined:, name:)
+        def _update_user_defined_internal(block_name:, entry:, new_user_defined:)
           @transactions.add_to_current_transaction(type: UPDATE_USER_DEFINED_FORWARD, entry: {
+            block_name: block_name,
             entry: entry,
             old_user_defined: entry.user_defined.clone(),
             new_user_defined: new_user_defined.clone(),
           })
-          @memory_blocks[name].update_user_defined(entry: entry, user_defined: new_user_defined, revision: @transactions.revision)
+          @memory_blocks[block_name].update_user_defined(entry: entry, user_defined: new_user_defined, revision: @transactions.revision)
         end
 
         private
-        def _set_comment_internal(entry:, new_comment:, name:)
+        def _set_comment_internal(block_name:, entry:, new_comment:)
           @transactions.add_to_current_transaction(type: SET_COMMENT_FORWARD, entry: {
+            block_name: block_name,
             entry: entry,
             old_comment: entry.comment,
             new_comment: new_comment,
           })
-          @memory_blocks[name].set_comment(entry: entry, comment: new_comment, revision: @transactions.revision)
+          @memory_blocks[block_name].set_comment(entry: entry, comment: new_comment, revision: @transactions.revision)
         end
 
         private
-        def _add_refs_internal(type:, from:, tos:, name:)
+        def _add_refs_internal(block_name:, type:, from:, tos:)
           @transactions.add_to_current_transaction(type: ADD_REFS, entry: {
+            block_name: block_name,
             type: type,
             from: from,
             tos:  tos,
           })
-          @memory_blocks[name].add_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
+          @memory_blocks[block_name].add_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
         end
 
         private
-        def _remove_refs_internal(type:, from:, tos:, name:)
+        def _remove_refs_internal(block_name:, type:, from:, tos:)
           @transactions.add_to_current_transaction(type: REMOVE_REFS, entry: {
+            block_name: block_name,
             type: type,
             from: from,
             tos:  tos,
           })
-          @memory_blocks[name].remove_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
+          @memory_blocks[block_name].remove_refs(type: type, from: from, tos: tos, revision: @transactions.revision)
         end
 
         private
         def _apply(action:, entry:)
           if action == ENTRY_DEFINE
-            _define_internal(entry: entry)
+            _define_internal(block_name: entry[:block_name], entry: entry[:entry])
           elsif action == ENTRY_UNDEFINE
-            _undefine_internal(entry: entry)
+            _undefine_internal(block_name: entry[:block_name], entry: entry[:entry])
           elsif action == UPDATE_USER_DEFINED_FORWARD
-            _update_user_defined_internal(entry: entry[:entry], new_user_defined: entry[:new_user_defined])
+            _update_user_defined_internal(block_name: entry[:block_name], entry: entry[:entry], new_user_defined: entry[:new_user_defined])
           elsif action == UPDATE_USER_DEFINED_BACKWARD
-            _update_user_defined_internal(entry: entry[:entry], new_user_defined: entry[:old_user_defined])
+            _update_user_defined_internal(block_name: entry[:block_name], entry: entry[:entry], new_user_defined: entry[:old_user_defined])
           elsif action == SET_COMMENT_FORWARD
-            _set_comment_internal(entry: entry[:entry], new_comment: entry[:new_comment])
+            _set_comment_internal(block_name: entry[:block_name], entry: entry[:entry], new_comment: entry[:new_comment])
           elsif action == SET_COMMENT_BACKWARD
-            _set_comment_internal(entry: entry[:entry], new_comment: entry[:old_comment])
+            _set_comment_internal(block_name: entry[:block_name], entry: entry[:entry], new_comment: entry[:old_comment])
           elsif action == ADD_REFS
-            _add_refs_internal(type: entry[:type], from: entry[:from], tos: entry[:tos])
+            _add_refs_internal(block_name: entry[:block_name], type: entry[:type], from: entry[:from], tos: entry[:tos])
           elsif action == REMOVE_REFS
-            _remove_refs_internal(type: entry[:type], from: entry[:from], tos: entry[:tos])
+            _remove_refs_internal(block_name: entry[:block_name], type: entry[:type], from: entry[:from], tos: entry[:tos])
           else
             raise(Error, "Unknown revision action: %s" % action)
           end
         end
 
         public
-        def define(address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
+        def define(block_name:nil, address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
           if !@in_transaction
             raise(Error, "Calls to define() must be wrapped in a transaction!")
           end
@@ -197,28 +206,28 @@ module H2gb
           end
 
           entry = MemoryEntry.new(address: address, type: type, value: value, length: length, user_defined: user_defined, comment: comment)
-          _define_internal(entry: entry)
+          _define_internal(block_name: block_name, entry: entry)
           refs.each_pair do |ref_type, tos|
-            _add_refs_internal(type: ref_type, from: address, tos: tos)
+            _add_refs_internal(block_name: block_name, type: ref_type, from: address, tos: tos)
           end
         end
 
         public
-        def undefine(address:, length:1, name:nil)
+        def undefine(block_name:nil, address:, length:1)
           if not @in_transaction
             raise(Error, "Calls to undefine() must be wrapped in a transaction!")
           end
 
-          @m, name:emory_block.each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
+          @memory_blocks[block_name].each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
             refs.each_pair do |type, tos|
-              _remove_refs_internal(type: type, from: this_address, tos: tos)
+              _remove_refs_internal(block_name: block_name, type: type, from: this_address, tos: tos)
             end
-            _undefine_internal(entry: entry)
+            _undefine_internal(block_name: block_name, entry: entry)
           end
         end
 
         public
-        def get_user_defined(address:, name:nil)
+        def get_user_defined(block_name:nil, address:)
           entry = @memory_blocks.get(address: address)
           if entry.nil?
             return {}
@@ -228,84 +237,84 @@ module H2gb
         end
 
         public
-        def replace_user_defined(address:, user_defined:, name:nil)
+        def replace_user_defined(block_name:nil, address:, user_defined:)
           if not @in_transaction
             raise(Error, "Calls to replace_user_defined() must be wrapped in a transaction!")
           end
 
-          entry, _ = @memory_blocks[name].get(address: address, define_by_default: false)
+          entry, _ = @memory_blocks[block_name].get(address: address, define_by_default: false)
 
           # Automatically define the entry if it doesn't exist
           if entry.nil?
-            entry = MemoryEntry.default(address: address, raw: @memory_blocks[name].raw[address].ord())
-            _define_internal(entry: entry)
+            entry = MemoryEntry.default(address: address, raw: @memory_blocks[block_name].raw[address].ord())
+            _define_internal(block_name: block_name, entry: entry)
           end
 
-          _update_user_defined_internal(entry: entry, new_user_defined: user_defined)
+          _update_user_defined_internal(block_name: block_name, entry: entry, new_user_defined: user_defined)
         end
 
         public
-        def _get_or_define_entry(address:, name:)
-          entry, _ = @memory_blocks[name].get(address: address, define_by_default: false)
+        def _get_or_define_entry(block_name:, address:)
+          entry, _ = @memory_blocks[block_name].get(address: address, define_by_default: false)
 
           # Automatically define the entry if it doesn't exist
           if entry.nil?
-            entry = MemoryEntry.default(address: address, raw: @memory_blocks[name].raw[address].ord())
-            _define_internal(entry: entry)
+            entry = MemoryEntry.default(address: address, raw: @memory_blocks[block_name].raw[address].ord())
+            _define_internal(block_name: block_name, entry: entry)
           end
 
           return entry
         end
 
         public
-        def update_user_defined(address:, user_defined:)
+        def update_user_defined(block_name: nil, address:, user_defined:)
           if not @in_transaction
             raise(Error, "Calls to update_user_defined() must be wrapped in a transaction!")
           end
 
-          entry = _get_or_define_entry(address: address)
-          _update_user_defined_internal(entry: entry, new_user_defined: entry.user_defined.merge(user_defined))
+          entry = _get_or_define_entry(block_name: block_name, address: address)
+          _update_user_defined_internal(block_name: block_name, entry: entry, new_user_defined: entry.user_defined.merge(user_defined))
         end
 
         public
-        def set_comment(address:, comment:)
+        def set_comment(block_name: nil, address:, comment:)
           if not @in_transaction
             raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
           end
 
-          entry = _get_or_define_entry(address: address)
-          _set_comment_internal(entry: entry, new_comment: comment)
+          entry = _get_or_define_entry(block_name: block_name, address: address)
+          _set_comment_internal(block_name: block_name, entry: entry, new_comment: comment)
         end
 
         public
-        def add_refs(type:, from:, tos:)
+        def add_refs(block_name: nil, type:, from:, tos:)
           if not @in_transaction
             raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
           end
 
-          _get_or_define_entry(address: from)
-          _add_refs_internal(type: type, from: from, tos: tos)
+          _get_or_define_entry(block_name: block_name, address: from)
+          _add_refs_internal(block_name: block_name, type: type, from: from, tos: tos)
         end
 
         public
-        def remove_refs(type:, from:, tos:)
+        def remove_refs(block_name: nil, type:, from:, tos:)
           if not @in_transaction
             raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
           end
 
-          _get_or_define_entry(address: from)
-          _remove_refs_internal(type: type, from: from, tos: tos)
+          _get_or_define_entry(block_name: block_name, address: from)
+          _remove_refs_internal(block_name: block_name, type: type, from: from, tos: tos)
         end
 
         public
-        def get(address:, length: 1, since: -1, name: nil)
+        def get(block_name:nil, address:, length: 1, since: -1)
           @mutex.synchronize() do
             result = {
               revision: @transactions.revision,
               entries: [],
             }
 
-            @memory_blocks[name].each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, refs, xrefs|
+            @memory_blocks[block_name].each_entry_in_range(address: address, length: length, since: since) do |this_address, entry, raw, refs, xrefs|
 
               result[:entries] << {
                 address:      this_address,
@@ -340,8 +349,8 @@ module H2gb
         end
 
         public
-        def get_all(name:nil)
-          return get(address: 0, length: @memory_blocks[name].raw.length, since: -1)
+        def get_all(block_name:nil)
+          return get(address: 0, length: @memory_blocks[block_name].raw.length, since: -1)
         end
 
         public
@@ -363,11 +372,11 @@ module H2gb
         end
 
         public
-        def to_s(name:nil)
+        def to_s(block_name:nil)
           return [
             "Revision: %d" % @transactions.revision,
             "--",
-            "%s" % [@memory_block.to_s()],
+            "%s" % [@memory_blocks[block_name].to_s()],
           ].join("\n")
         end
 

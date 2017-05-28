@@ -16,10 +16,12 @@ module H2gb
   module Vault
     class Memory
       class MemoryBlock
-        attr_reader :raw
+        attr_reader :raw, :base_address, :name
 
-        def initialize(raw:, revision:0)
+        def initialize(raw:, base_address:, name:, revision:0)
           @raw = raw.force_encoding('ASCII-8BIT')
+          @base_address = base_address
+          @name = name
           @entries = {}
           @last_revision = -1
           @memory_refs = {}

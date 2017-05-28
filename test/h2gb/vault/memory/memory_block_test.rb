@@ -9,7 +9,7 @@ module H2gb
     class MemoryBlockTest < Test::Unit::TestCase
       def setup()
         raw = (0..255).to_a().map() { |b| b.chr() }.join()
-        @memory_block = Memory::MemoryBlock.new(raw: raw)
+        @memory_block = Memory::MemoryBlock.new(raw: raw, name: 'test', base_address: 0x0000)
       end
 
       def test_empty()
@@ -37,6 +37,11 @@ module H2gb
           { address: 0x0000, entry: test_entry, raw: "\x00".bytes(), refs: {}, xrefs: {} },
         ]
         assert_equal(expected, results)
+      end
+
+      def test_parameters()
+        assert_equal('test', @memory_block.name)
+        assert_equal(0, @memory_block.base_address)
       end
 
       def test_each_entry_no_entries_in_range()

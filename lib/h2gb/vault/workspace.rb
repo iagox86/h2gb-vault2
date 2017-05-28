@@ -34,10 +34,13 @@ module H2gb
       ADD_REFS = :add_refs
       REMOVE_REFS = :remove_refs
 
+      CREATE_BLOCK = :create_block
+      DELETE_BLOCK = :delete_block
+
       public
       def initialize(block_name:nil, raw:, base_address:0)
         # Create an initial memory_block
-        # TODO: This is for compatibility, I'm going to get rid ofi t
+        # TODO: This is for compatibility, I'm going to get rid of it
         @memory_blocks = {}
         @memory_blocks[block_name] = Memory::MemoryBlock.new(
           name: block_name,
@@ -57,16 +60,15 @@ module H2gb
 
           ADD_REFS => REMOVE_REFS,
           REMOVE_REFS => ADD_REFS,
+
+          CREATE_BLOCK => DELETE_BLOCK,
+          DELETE_BLOCK => CREATE_BLOCK,
         })
         @in_transaction = false
 
         @refs = {}
 
         @mutex = Mutex.new()
-      end
-
-      public
-      def create(block_name:nil, base_address:0, raw:)
       end
 
       public
@@ -77,14 +79,14 @@ module H2gb
       public
       def transaction()
         @mutex.synchronize() do
-          @in_transaction = true
+          begin
+            @in_transaction = true
 
-          @transactions.increment()
-          yield
-
-          # TODO: Catch errors properly so we don't wind up in a bad state here
-
-          @in_transaction = false
+            @transactions.increment()
+            yield
+          ensure # ensure == finally
+            @in_transaction = false
+          end
         end
       end
 
@@ -100,14 +102,12 @@ module H2gb
           _undefine_internal(block_name: block_name, entry: this_entry)
         end
 
-        @memory_blocks[block_name].define(entry: entry, revision: @transactions.revision)
-
         @transactions.add_to_current_transaction(type: ENTRY_DEFINE, entry: { block_name: block_name, entry: entry })
+        @memory_blocks[block_name].define(entry: entry, revision: @transactions.revision)
       end
 
       private
       def _undefine_internal(block_name:, entry:)
-        # TODO: I think we should always do the add_to_current_transaction() part last
         @transactions.add_to_current_transaction(type: ENTRY_UNDEFINE, entry: {
           block_name: block_name,
           entry: entry
@@ -160,6 +160,38 @@ module H2gb
       end
 
       private
+      def _create_block_internal(block_name:, base_address:, raw:)
+        @transactions.add_to_current_transaction(type: CREATE_BLOCK, entry: {
+          block_name: block_name,
+        })
+
+        if @memory_blocks[block_name]
+          raise(Error, "Block with name %s already exists!" % block_name)
+        end
+
+        @memory_blocks[block_name] = Memory::MemoryBlock.new(name: block_name, base_address: base_address, raw: raw)
+      end
+
+      private
+      def _delete_block_internal(block_name:)
+        # Make sure everything is undefined first
+        memory_block = @memory_blocks[block_name]
+        if memory_block.nil?
+          raise("Trying to delete an unknown memory block!")
+        end
+
+        undefine(block_name: block_name, address: 0, length: memory_block.raw.length)
+
+        @transactions.add_to_current_transaction(type: DELETE_BLOCK, entry: {
+          block_name: block_name,
+          base_address: memory_block.base_address,
+          raw: memory_block.raw,
+        })
+
+        @memory_blocks.delete(block_name)
+      end
+
+      private
       def _apply(action:, entry:)
         if action == ENTRY_DEFINE
           _define_internal(block_name: entry[:block_name], entry: entry[:entry])
@@ -177,6 +209,10 @@ module H2gb
           _add_refs_internal(block_name: entry[:block_name], type: entry[:type], from: entry[:from], tos: entry[:tos])
         elsif action == REMOVE_REFS
           _remove_refs_internal(block_name: entry[:block_name], type: entry[:type], from: entry[:from], tos: entry[:tos])
+        elsif action == CREATE_BLOCK
+          _create_block_internal(block_name: entry[:block_name], base_address: entry[:base_address], raw: entry[:raw])
+        elsif action == DELETE_BLOCK
+          _delete_block_internal(block_name: entry[:block_name])
         else
           raise(Error, "Unknown revision action: %s" % action)
         end
@@ -185,7 +221,7 @@ module H2gb
       public
       def define(block_name:nil, address:, type:, value:, length:, refs:{}, user_defined:{}, comment:nil)
         if !@in_transaction
-          raise(Error, "Calls to define() must be wrapped in a transaction!")
+          raise(Error, "Must be wrapped in a transaction!")
         end
         if !refs.is_a?(Hash)
           raise(Error, "refs must be a Hash!")
@@ -214,7 +250,7 @@ module H2gb
       public
       def undefine(block_name:nil, address:, length:1)
         if not @in_transaction
-          raise(Error, "Calls to undefine() must be wrapped in a transaction!")
+          raise(Error, "Must be wrapped in a transaction!")
         end
 
         @memory_blocks[block_name].each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
@@ -238,7 +274,7 @@ module H2gb
       public
       def replace_user_defined(block_name:nil, address:, user_defined:)
         if not @in_transaction
-          raise(Error, "Calls to replace_user_defined() must be wrapped in a transaction!")
+          raise(Error, "Must be wrapped in a transaction!")
         end
 
         entry, _ = @memory_blocks[block_name].get(address: address, define_by_default: false)
@@ -268,7 +304,7 @@ module H2gb
       public
       def update_user_defined(block_name: nil, address:, user_defined:)
         if not @in_transaction
-          raise(Error, "Calls to update_user_defined() must be wrapped in a transaction!")
+          raise(Error, "Must be wrapped in a transaction!")
         end
 
         entry = _get_or_define_entry(block_name: block_name, address: address)
@@ -278,7 +314,7 @@ module H2gb
       public
       def set_comment(block_name: nil, address:, comment:)
         if not @in_transaction
-          raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
+          raise(Error, "Must be wrapped in a transaction!")
         end
 
         entry = _get_or_define_entry(block_name: block_name, address: address)
@@ -288,7 +324,7 @@ module H2gb
       public
       def add_refs(block_name: nil, type:, from:, tos:)
         if not @in_transaction
-          raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
+          raise(Error, "Must be wrapped in a transaction!")
         end
 
         _get_or_define_entry(block_name: block_name, address: from)
@@ -298,11 +334,29 @@ module H2gb
       public
       def remove_refs(block_name: nil, type:, from:, tos:)
         if not @in_transaction
-          raise(Error, "Calls to set_comment() must be wrapped in a transaction!")
+          raise(Error, "Must be wrapped in a transaction!")
         end
 
         _get_or_define_entry(block_name: block_name, address: from)
         _remove_refs_internal(block_name: block_name, type: type, from: from, tos: tos)
+      end
+
+      public
+      def create_block(block_name:, base_address:0, raw:)
+        if not @in_transaction
+          raise(Error, "Must be wrapped in a transaction!")
+        end
+
+        _create_block_internal(block_name: block_name, base_address: base_address, raw: raw)
+      end
+
+      public
+      def delete_block(block_name:)
+        if not @in_transaction
+          raise(Error, "Must be wrapped in a transaction!")
+        end
+
+        _delete_block_internal(block_name: block_name)
       end
 
       public

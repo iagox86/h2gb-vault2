@@ -9,7 +9,7 @@ module H2gb
   module Vault
     class UpdaterTest < Test::Unit::TestCase
       def setup()
-        @memory = Memory::Workspace.new(raw: UPDATER_MEMORY)
+        @memory = Workspace.new(raw: UPDATER_MEMORY)
         @updater = Updater.new(memory: @memory)
       end
 

@@ -27,7 +27,7 @@ module H2gb
           "/bin/sh"
         )
 
-        @memory = Memory::Workspace.new(raw: test_data)
+        @memory = Workspace.new(raw: test_data)
         @analyzer = CodeAnalyzer.new(@memory)
         @analyzer.analyze()
 

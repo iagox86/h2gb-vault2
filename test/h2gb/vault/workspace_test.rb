@@ -45,7 +45,7 @@ module H2gb
   module Vault
     class InsertTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_empty()
@@ -332,7 +332,7 @@ module H2gb
     ##
     class TransactionTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_add_transaction()
@@ -361,7 +361,7 @@ module H2gb
 
     class DeleteTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_delete_nothing()
@@ -540,7 +540,7 @@ module H2gb
 
     class UndoTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_basic_undo()
@@ -913,7 +913,7 @@ module H2gb
 
     class RedoTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_basic_redo()
@@ -1281,7 +1281,7 @@ module H2gb
 
     class GetChangesSinceTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
 
@@ -1534,7 +1534,7 @@ module H2gb
 
     class XrefsTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_basic_xref()
@@ -2008,14 +2008,14 @@ module H2gb
 
     class SaveRestoreTest < Test::Unit::TestCase
       def test_save_load()
-        memory = Memory::Workspace.new(raw: RAW)
+        memory = Workspace.new(raw: RAW)
 
         _test_define(memory: memory, address: 0x0000, length: 0x0004, user_defined: { test: 'A'}, refs: { code: [0x0004, 0x0005] })
         _test_define(memory: memory, address: 0x0004, length: 0x0004, user_defined: { test: 'B'}, refs: { code: [0x0004] })
         _test_define(memory: memory, address: 0x0005, length: 0x0004, user_defined: { test: 'C'}, refs: { code: [0x0005, 0x000a] })
 
         # Save/load throughout this function to make sure it's working right
-        memory = Memory::Workspace.load(memory.dump())
+        memory = Workspace.load(memory.dump())
         assert_not_nil(memory)
 
         result = memory.get(address: 0x00, length: 0x10, since: 0)
@@ -2145,14 +2145,14 @@ module H2gb
 
       def test_bad_load()
         assert_raises(Error) do
-          Memory::Workspace.load("Not valid YAML")
+          Workspace.load("Not valid YAML")
         end
       end
     end
 
     class UserDefinedTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_replace()
@@ -2475,7 +2475,7 @@ module H2gb
 
     class ChangeCommentTest < Test::Unit::TestCase
       def setup()
-        @workspace = Memory::Workspace.new(raw: RAW)
+        @workspace = Workspace.new(raw: RAW)
       end
 
       def test_set_comment()

@@ -67,8 +67,6 @@ module H2gb
         })
         @in_transaction = false
 
-        @refs = {}
-
         @mutex = Mutex.new()
       end
 

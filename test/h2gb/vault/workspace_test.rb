@@ -777,20 +777,20 @@ module H2gb
       def test_undo_too_much()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0002, user_defined: { test: 'A'} )
 
+        @workspace.undo() # Undo define
+        @workspace.undo() # Undo create block
         @workspace.undo()
         @workspace.undo()
         @workspace.undo()
         @workspace.undo()
-        @workspace.undo()
-        @workspace.undo()
+        @workspace.redo() # Redo create block - this will make the full block Revision 5
 
         _test_define(workspace: @workspace, address: 0x0001, length: 0x0002, user_defined: { test: 'B'} )
-        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 5)
 
         expected = {
-          revision: 0x04,
+          revision: 0x06,
           entries: [
-            TestHelper.test_entry_deleted(address: 0x0000, raw: "\x00".bytes()),
             TestHelper.test_entry(address: 0x0001, length: 0x02, raw: "\x01\x02".bytes(), user_defined: { test: 'B'} ),
           ]
         }
@@ -1227,10 +1227,10 @@ module H2gb
         @workspace.redo()
 
         _test_define(workspace: @workspace, address: 0x0002, length: 0x0002, user_defined: { test: 'B'} )
-        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 1)
+        result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since: 5)
 
         expected = {
-          revision: 0x05,
+          revision: 0x07,
           entries: [
             TestHelper.test_entry(address: 0x0000, length: 0x02, raw: "\x00\x01".bytes(), user_defined: { test: 'A'} ),
             TestHelper.test_entry(address: 0x0002, length: 0x02, raw: "\x02\x03".bytes(), user_defined: { test: 'B'} ),
@@ -2530,7 +2530,7 @@ module H2gb
       def test_set_comment()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: nil)
         @workspace.transaction() do
-          @workspace.set_comment(address: 0x0000, comment: 'blahblah')
+          @workspace.set_comment(block_name: 'test', address: 0x0000, comment: 'blahblah')
         end
 
         result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
@@ -2547,7 +2547,7 @@ module H2gb
       def test_change_comment()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
         @workspace.transaction() do
-          @workspace.set_comment(address: 0x0000, comment: 'blahblah')
+          @workspace.set_comment(block_name: 'test', address: 0x0000, comment: 'blahblah')
         end
 
         result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
@@ -2564,7 +2564,7 @@ module H2gb
       def test_remove_comment()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
         @workspace.transaction() do
-          @workspace.set_comment(address: 0x0000, comment: nil)
+          @workspace.set_comment(block_name: 'test', address: 0x0000, comment: nil)
         end
 
         result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
@@ -2581,7 +2581,7 @@ module H2gb
       def test_change_comment_undo_redo()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: 'hihi')
         @workspace.transaction() do
-          @workspace.set_comment(address: 0x0000, comment: 'blahblah')
+          @workspace.set_comment(block_name: 'test', address: 0x0000, comment: 'blahblah')
         end
 
         result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:1)
@@ -2618,7 +2618,7 @@ module H2gb
 
       def test_add_comment_no_entry()
         @workspace.transaction() do
-          @workspace.set_comment(address: 0x0000, comment: 'blahblah')
+          @workspace.set_comment(block_name: 'test', address: 0x0000, comment: 'blahblah')
         end
 
         result = @workspace.get(block_name: 'test', address: 0x00, length: 0xFF, since:1)
@@ -2656,7 +2656,7 @@ module H2gb
       def test_change_comment_updates_revision()
         _test_define(workspace: @workspace, address: 0x0000, length: 0x0001, comment: nil)
         @workspace.transaction() do
-          @workspace.set_comment(address: 0x0000, comment: 'blahblah')
+          @workspace.set_comment(block_name: 'test', address: 0x0000, comment: 'blahblah')
         end
 
         result = @workspace.get(block_name: 'test', address: 0x00, length: 0x01, since:2)
@@ -2730,6 +2730,19 @@ module H2gb
           @workspace.delete_block(block_name: 'bbbb')
         end
         assert_equal([], @workspace.get_block_names().sort())
+      end
+
+      def test_simple_undo_redo()
+        # Start from scratch for this test
+        @workspace = Workspace.new()
+
+        @workspace.transaction() do
+          @workspace.create_block(block_name: 'test', base_address: 0, raw: RAW)
+        end
+        @workspace.undo()
+        @workspace.redo()
+
+        assert_equal(['test'], @workspace.get_block_names())
       end
 
       def test_undo_redo()

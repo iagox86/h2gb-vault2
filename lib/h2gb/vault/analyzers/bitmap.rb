@@ -20,10 +20,8 @@ require 'h2gb/vault/types/updater'
 module H2gb
   module Vault
     class BitmapAnalyzer
-      IN = :raw
-      OUT = :parsed_bmp
-
       def initialize(workspace:)
+        # TODO: The analyzers should probably create their own blocks now
         @workspace = workspace
         @updater = Updater.new(workspace: @workspace)
       end
@@ -32,120 +30,120 @@ module H2gb
         # Update the easy stuff
         @updater.do([
           # Bitmap header
-          { action: :define_basic_type, address: 0x0000, type: :uint16_t, options: { endian: :big }, user_defined: { display_hint: :string }, comment: 'BMP header' },
-          { action: :define_basic_type, address: 0x0002, type: :uint32_t, options: { endian: :little }, comment: 'File size' },
-          { action: :define_basic_type, address: 0x0006, type: :uint16_t, options: { endian: :little }, comment: 'Reserved (1)' },
-          { action: :define_basic_type, address: 0x0008, type: :uint16_t, options: { endian: :little }, comment: 'Reserved (2)' },
-          { action: :define_basic_type, address: 0x000a, type: :offset32, options: { endian: :little }, comment: 'Offset to pixel data' },
+          { action: :define_basic_type, block_name: 'data', address: 0x0000, type: :uint16_t, options: { endian: :big }, user_defined: { display_hint: :string }, comment: 'BMP header' },
+          { action: :define_basic_type, block_name: 'data', address: 0x0002, type: :uint32_t, options: { endian: :little }, comment: 'File size' },
+          { action: :define_basic_type, block_name: 'data', address: 0x0006, type: :uint16_t, options: { endian: :little }, comment: 'Reserved (1)' },
+          { action: :define_basic_type, block_name: 'data', address: 0x0008, type: :uint16_t, options: { endian: :little }, comment: 'Reserved (2)' },
+          { action: :define_basic_type, block_name: 'data', address: 0x000a, type: :offset32, options: { endian: :little }, comment: 'Offset to pixel data' },
 
           # DIB header
-          { action: :define_basic_type, address: 0x000e, type: :uint32_t, options: { endian: :little }, comment: 'DIB header size' },
+          { action: :define_basic_type, block_name: 'data', address: 0x000e, type: :uint32_t, options: { endian: :little }, comment: 'DIB header size' },
         ])
 
         # Validate fields in the bitmap header
-        header = @workspace.get_value(address: 0x0000)
+        header = @workspace.get_value(address: 0x0000, block_name: 'data')
         if header != 0x424d
           @updater.do([
-            { action: :set_comment, address: 0x0000, comment: 'BMP header (invalid)' },
-            { action: :update_user_defined, address: 0x0000, user_defined: { error: warning, error_text: 'Invalid BMP header' } },
+            { action: :set_comment, block_name: 'data', address: 0x0000, comment: 'BMP header (invalid)' },
+            { action: :update_user_defined, block_name: 'data', address: 0x0000, user_defined: { error: warning, error_text: 'Invalid BMP header' } },
           ])
         end
 
         # Validate the file size
-        file_size = @workspace.get_value(address: 0x0002)
-        if file_size != @workspace.raw.length()
+        file_size = @workspace.get_value(address: 0x0002, block_name: 'data')
+        if file_size != @workspace.raw(block_name: 'data').length()
           @updater.do([
-            { action: :set_comment, address: 0x0000, comment: 'File size (invalid)' },
-            { action: :update_user_defined, address: 0x0000, user_defined: { error: warning, error_text: "Doesn't match the file's actual size!" } },
+            { action: :set_comment, block_name: 'data', address: 0x0000, comment: 'File size (invalid)' },
+            { action: :update_user_defined, block_name: 'data', address: 0x0000, user_defined: { error: warning, error_text: "Doesn't match the file's actual size!" } },
           ])
         end
 
         # Different lengths mean a different pixel structure
-        dib_length = @workspace.get_value(address: 0x000e)
+        dib_length = @workspace.get_value(address: 0x000e, block_name: 'data')
 
         # TODO: Use this as an excuse to implement array, struct, and enum support
         if dib_length == 12
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (BIGMAPCOREHEADER)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (BIGMAPCOREHEADER)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
           ])
         elsif dib_length == 64
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (OS22XBITMAPHEADER)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (OS22XBITMAPHEADER)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
           ])
         elsif dib_length == 16
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (OS22XBITMAPHEADER_shortened)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (OS22XBITMAPHEADER_shortened)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
           ])
         elsif dib_length == 40
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (BITMAPINFOHEADER)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (BITMAPINFOHEADER)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
           ])
         elsif dib_length == 52
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (BITMAPV2INFOHEADER)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (BITMAPV2INFOHEADER)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
           ])
         elsif dib_length == 56
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (BITMAPV3INFOHEADER)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (BITMAPV3INFOHEADER)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
           ])
         elsif dib_length == 108
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (BITMAPV4HEADER)" },
-            { action: :define_basic_type,   address: 0x0012, type: :uint32_t, options: { endian: :little }, comment: 'Image width' },
-            { action: :define_basic_type,   address: 0x0016, type: :uint32_t, options: { endian: :little }, comment: 'Image height' },
-            { action: :define_basic_type,   address: 0x001a, type: :uint16_t, options: { endian: :little }, comment: 'Number of colour planes' },
-            { action: :define_basic_type,   address: 0x001c, type: :uint16_t, options: { endian: :little }, comment: 'Bits per pixel' },
-            { action: :define_basic_type,   address: 0x001e, type: :uint32_t, options: { endian: :little }, comment: 'bi_bitfields' },
-            { action: :define_basic_type,   address: 0x0022, type: :uint32_t, options: { endian: :little }, comment: 'Raw image size' },
-            { action: :define_basic_type,   address: 0x0026, type: :uint32_t, options: { endian: :little }, comment: 'Horizontal print resolution' },
-            { action: :define_basic_type,   address: 0x002a, type: :uint32_t, options: { endian: :little }, comment: 'Vertrical print resolution' },
-            { action: :define_basic_type,   address: 0x002e, type: :uint32_t, options: { endian: :little }, comment: 'Number of colours in the pallette' },
-            { action: :define_basic_type,   address: 0x0032, type: :uint32_t, options: { endian: :little }, comment: 'Colour importance' },
-            { action: :define_basic_type,   address: 0x0036, type: :uint32_t, options: { endian: :little }, comment: 'Red bitmask' },
-            { action: :define_basic_type,   address: 0x003a, type: :uint32_t, options: { endian: :little }, comment: 'Green bitmask' },
-            { action: :define_basic_type,   address: 0x003e, type: :uint32_t, options: { endian: :little }, comment: 'Blue bitmask' },
-            { action: :define_basic_type,   address: 0x0042, type: :uint32_t, options: { endian: :little }, comment: 'Alpha bitmask' },
-            { action: :define_basic_type,   address: 0x0046, type: :uint32_t, options: { endian: :little }, comment: 'Windows colour space' },
-            { action: :define_custom_type,  address: 0x004a, type: :colour_space_endpoints, length: 0x24, value: 'n/a', comment: 'Colour space endpoints' },
-            { action: :define_basic_type,   address: 0x006e, type: :uint32_t, options: { endian: :little }, comment: 'Red gamma' },
-            { action: :define_basic_type,   address: 0x0072, type: :uint32_t, options: { endian: :little }, comment: 'Green gamma' },
-            { action: :define_basic_type,   address: 0x0076, type: :uint32_t, options: { endian: :little }, comment: 'Blue gamma' },
+            { action: :set_comment,        block_name: 'data', address: 0x000e, comment: "DIB structure length (BITMAPV4HEADER)" },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0012, type: :uint32_t, options: { endian: :little }, comment: 'Image width' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0016, type: :uint32_t, options: { endian: :little }, comment: 'Image height' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x001a, type: :uint16_t, options: { endian: :little }, comment: 'Number of colour planes' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x001c, type: :uint16_t, options: { endian: :little }, comment: 'Bits per pixel' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x001e, type: :uint32_t, options: { endian: :little }, comment: 'bi_bitfields' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0022, type: :uint32_t, options: { endian: :little }, comment: 'Raw image size' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0026, type: :uint32_t, options: { endian: :little }, comment: 'Horizontal print resolution' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x002a, type: :uint32_t, options: { endian: :little }, comment: 'Vertrical print resolution' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x002e, type: :uint32_t, options: { endian: :little }, comment: 'Number of colours in the pallette' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0032, type: :uint32_t, options: { endian: :little }, comment: 'Colour importance' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0036, type: :uint32_t, options: { endian: :little }, comment: 'Red bitmask' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x003a, type: :uint32_t, options: { endian: :little }, comment: 'Green bitmask' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x003e, type: :uint32_t, options: { endian: :little }, comment: 'Blue bitmask' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0042, type: :uint32_t, options: { endian: :little }, comment: 'Alpha bitmask' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0046, type: :uint32_t, options: { endian: :little }, comment: 'Windows colour space' },
+            { action: :define_custom_type, block_name: 'data', address: 0x004a, type: :colour_space_endpoints, length: 0x24, value: 'n/a', comment: 'Colour space endpoints' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x006e, type: :uint32_t, options: { endian: :little }, comment: 'Red gamma' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0072, type: :uint32_t, options: { endian: :little }, comment: 'Green gamma' },
+            { action: :define_basic_type,  block_name: 'data', address: 0x0076, type: :uint32_t, options: { endian: :little }, comment: 'Blue gamma' },
           ])
         elsif dib_length == 124
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (BITMAPV5HEADER)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (BITMAPV5HEADER)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: warning, error_text: 'Parsing not implemented' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unparsed DIB header' }
           ])
         else
           @updater.do([
-            { action: :set_comment,         address: 0x000e, comment: "DIB structure length (Unknown header type!)" },
-            { action: :update_user_defined, address: 0x000e, user_defined: { error: error, error_text: 'Unknown header type!' } },
-            { action: :define_custom_type,  address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unknown DIB header' }
+            { action: :set_comment,         block_name: 'data', address: 0x000e, comment: "DIB structure length (Unknown header type!)" },
+            { action: :update_user_defined, block_name: 'data', address: 0x000e, user_defined: { error: error, error_text: 'Unknown header type!' } },
+            { action: :define_custom_type,  block_name: 'data', address: 0x0012, type: :custom_type, length: dib_length, value: "n/a", comment: 'Unknown DIB header' }
           ])
         end
 
         # Raw pixels
-        pixel_offset = @workspace.get_value(address: 0x000a)
+        pixel_offset = @workspace.get_value(address: 0x000a, block_name: 'data')
         # TODO: This hardcoded offset won't work if I implement other bitmap types
-        bits_per_pixel = @workspace.get_value(address: 0x001c)
+        bits_per_pixel = @workspace.get_value(address: 0x001c, block_name: 'data')
 
         if bits_per_pixel == 24
           updates = []
-          pixel_offset.step(@workspace.raw.length() - 1, 3) do |i|
-            updates << { action: :define_basic_type, address: i, type: :rgb, options: { endian: :little }}
+          pixel_offset.step(@workspace.raw(block_name: 'data').length() - 1, 3) do |i|
+            updates << { action: :define_basic_type, block_name: 'data', address: i, type: :rgb, options: { endian: :little }}
           end
 
           @updater.do(updates)

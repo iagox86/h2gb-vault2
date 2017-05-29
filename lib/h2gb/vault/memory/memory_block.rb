@@ -19,7 +19,7 @@ module H2gb
       class MemoryBlock
         attr_reader :raw, :base_address, :name
 
-        def initialize(raw:, base_address:, name:, revision:0)
+        def initialize(raw:, base_address:, name:, revision:)
           @raw = raw.force_encoding('ASCII-8BIT')
           @base_address = base_address
           @name = name

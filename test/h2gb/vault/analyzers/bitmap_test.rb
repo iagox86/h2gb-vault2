@@ -11,46 +11,46 @@ module H2gb
         @workspace = Workspace.new()
         File.open(test_file, 'rb') do |f|
           @workspace.transaction() do
-            @workspace.create_block(block_name: 'test', raw: f.read(), base_address: 0)
+            @workspace.create_block(block_name: 'data', raw: f.read(), base_address: 0)
           end
         end
         @analyzer = BitmapAnalyzer.new(workspace: @workspace)
         @analyzer.analyze()
 
-        header = @workspace[0x0000]
+        header = @workspace.get_single(block_name: 'data', address: 0x0000)
         expected = TestHelper.test_entry(address: 0x0000, type: :uint16_t, value: 0x424d, length: 2, user_defined: { display_hint: :string }, comment: "BMP header", raw: "BM".bytes())
         assert_equal(expected, header)
 
-        length = @workspace[0x0002]
+        length = @workspace.get_single(block_name: 'data', address: 0x0002)
         expected = TestHelper.test_entry(address: 0x0002, type: :uint32_t, value: 0x000000aa, length: 4, user_defined: {}, comment: "File size", raw: "\xaa\x00\x00\x00".bytes())
         assert_equal(expected, length)
 
-        reserved1 = @workspace[0x0006]
+        reserved1 = @workspace.get_single(block_name: 'data', address: 0x0006)
         expected = TestHelper.test_entry(address: 0x0006, type: :uint16_t, value: 0x0000, length: 2, user_defined: {}, comment: "Reserved (1)", raw: "\x00\x00".bytes())
         assert_equal(expected, reserved1)
 
-        reserved2 = @workspace[0x0008]
+        reserved2 = @workspace.get_single(block_name: 'data', address: 0x0008)
         expected = TestHelper.test_entry(address: 0x0008, type: :uint16_t, value: 0x0000, length: 2, user_defined: {}, comment: "Reserved (2)", raw: "\x00\x00".bytes())
         assert_equal(expected, reserved2)
 
     #    offset_entry = @workspace.get(address: 0x0a)
-        offset = @workspace[0x000a]
+        offset = @workspace.get_single(block_name: 'data', address: 0x000a)
         expected = TestHelper.test_entry(address: 0x000a, type: :offset32, value: 0x0000007a, length: 4, user_defined: {}, comment: "Offset to pixel data", raw: "\x7a\x00\x00\x00".bytes(), refs: { data: [0x0000007a] })
         assert_equal(expected, offset)
 
-        dib_length = @workspace[0x000e]
+        dib_length = @workspace.get_single(block_name: 'data', address: 0x000e)
         expected = TestHelper.test_entry(address: 0x000e, type: :uint32_t, value: 0x0000006c, length: 4, user_defined: {}, comment: "DIB structure length (BITMAPV4HEADER)", raw: "\x6c\x00\x00\x00".bytes())
         assert_equal(expected, dib_length)
 
-        width = @workspace[0x0012]
+        width = @workspace.get_single(block_name: 'data', address: 0x0012)
         expected = TestHelper.test_entry(address: 0x0012, type: :uint32_t, value: 0x00000004, length: 4, user_defined: {}, comment: "Image width", raw: "\x04\x00\x00\x00".bytes())
         assert_equal(expected, width)
 
-        height = @workspace[0x0016]
+        height = @workspace.get_single(block_name: 'data', address: 0x0016)
         expected = TestHelper.test_entry(address: 0x0016, type: :uint32_t, value: 0x00000004, length: 4, user_defined: {}, comment: "Image height", raw: "\x04\x00\x00\x00".bytes())
         assert_equal(expected, height)
 
-        pixels = @workspace.get(address: 0x7a, length: 0x30)[:entries]
+        pixels = @workspace.get(block_name: 'data', address: 0x7a, length: 0x30)[:entries]
 
         expected = [
           # Row 4

@@ -10,7 +10,7 @@ module H2gb
       class MemoryBlockTest < Test::Unit::TestCase
         def setup()
           raw = (0..255).to_a().map() { |b| b.chr() }.join()
-          @memory_block = MemoryBlock.new(raw: raw, name: 'test', base_address: 0x0000)
+          @memory_block = MemoryBlock.new(raw: raw, name: 'test', base_address: 0x0000, revision: 0)
         end
 
         def test_empty()

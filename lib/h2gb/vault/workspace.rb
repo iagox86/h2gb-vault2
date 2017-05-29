@@ -152,15 +152,22 @@ module H2gb
 
       private
       def _create_block_internal(block_name:, base_address:, raw:)
-        @transactions.add_to_current_transaction(type: CREATE_BLOCK, entry: {
-          block_name: block_name,
-        })
-
         if @memory_blocks[block_name]
           raise(Error, "Block with name %s already exists!" % block_name)
         end
 
-        @memory_blocks[block_name] = Memory::MemoryBlock.new(name: block_name, base_address: base_address, raw: raw)
+        @transactions.add_to_current_transaction(type: CREATE_BLOCK, entry: {
+          block_name: block_name,
+          base_address: base_address,
+          raw: raw,
+        })
+
+        @memory_blocks[block_name] = Memory::MemoryBlock.new(
+          name: block_name,
+          base_address: base_address,
+          raw: raw,
+          revision: @transactions.revision,
+        )
       end
 
       private
@@ -171,7 +178,7 @@ module H2gb
         end
 
         # Make sure everything is undefined first
-        memory_block.each_entry_in_range(address: 0, length: memory_block.raw.length) do |this_address, entry, raw, refs, xrefs|
+        memory_block.each_entry_in_range(address: 0, length: memory_block.raw.length, include_undefined: false) do |this_address, entry, raw, refs, xrefs|
           # TODO: Move _remove_refs_internal() into _undefine_internal(), if we can?
           refs.each_pair do |type, tos|
             _remove_refs_internal(block_name: block_name, type: type, from: this_address, tos: tos)
@@ -256,7 +263,7 @@ module H2gb
           raise(Error, "Unknown memory block: %s" % block_name)
         end
 
-        @memory_blocks[block_name].each_entry_in_range(address: address, length: length) do |this_address, entry, raw, refs, xrefs|
+        @memory_blocks[block_name].each_entry_in_range(address: address, length: length, include_undefined: false) do |this_address, entry, raw, refs, xrefs|
           refs.each_pair do |type, tos|
             _remove_refs_internal(block_name: block_name, type: type, from: this_address, tos: tos)
           end
@@ -428,13 +435,8 @@ module H2gb
       end
 
       public
-      def get_value(address:)
-        return get_single(address: address)[:value]
-      end
-
-      public
-      def [](address)
-        return get_single(address: address)
+      def get_value(block_name:, address:)
+        return get_single(block_name: block_name, address: address)[:value]
       end
 
       public

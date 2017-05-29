@@ -22,24 +22,30 @@ require 'h2gb/vault/analyzers/code'
 require 'h2gb/vault/api/error_handling'
 
 
-memories = {}
+workspaces = {}
 updaters = {}
 
 test_file = File.dirname(__FILE__) + '/data/test.bmp'
+workspaces['1'] = H2gb::Vault::Workspace.new()
 File.open(test_file, 'rb') do |f|
-  memories['1'] = H2gb::Vault::Workspace.new(raw: f.read())
+  workspaces['1'].transaction() do
+    workspaces['1'].create_block(block_name: 'data', base_address: 0x0000, raw: f.read())
+  end
 end
-analyzer = H2gb::Vault::BitmapAnalyzer.new(memories['1'])
+analyzer = H2gb::Vault::BitmapAnalyzer.new(workspaces['1'])
 analyzer.analyze()
-updaters['1'] = H2gb::Vault::Updater.new(memory: memories['1'])
+updaters['1'] = H2gb::Vault::Updater.new(workspace: workspaces['1'])
 
 test_file = File.dirname(__FILE__) + '/data/test.bin'
+workspaces['2'] = H2gb::Vault::Workspace.new()
 File.open(test_file, 'rb') do |f|
-  memories['2'] = H2gb::Vault::Workspace.new(raw: f.read())
+  workspaces['2'].transaction() do
+    workspaces['2'].create_block(block_name: 'data', base_address: 0x0000, raw: f.read())
+  end
 end
-analyzer = H2gb::Vault::CodeAnalyzer.new(memories['2'])
+analyzer = H2gb::Vault::CodeAnalyzer.new(workspaces['2'])
 analyzer.analyze()
-updaters['2'] = H2gb::Vault::Updater.new(memory: memories['2'])
+updaters['2'] = H2gb::Vault::Updater.new(workspace: workspaces['2'])
 
 configure() do
   set(:allow_methods, [:get, :post, :put, :delete, :options])
@@ -87,32 +93,32 @@ options("*") do
   status(200)
 end
 
-get('/api/memories') do
+get('/api/workspaces') do
   results = []
 
-  memories.each_pair do |id, memory|
+  workspaces.each_pair do |id, workspace|
     results << {
-      type: 'memory',
+      type: 'workspace',
       id: id,
-      attributes: memories[id].get_all(),
+      attributes: workspaces[id].get_all(),
     }
   end
 
   return results
 end
 
-get('/api/memories/:id') do |id|
+get('/api/workspaces/:id') do |id|
   puts "id = %s" % id.to_s
   return {
     data: {
-      type: 'memory',
+      type: 'workspace',
       id: id,
-      attributes: memories[id].get_all(),
+      attributes: workspaces[id].get_all(),
     }
   }
 end
 
-post('/api/memories/:id/update') do |id|
+post('/api/workspaces/:id/update') do |id|
   updaters[id].do(@params['updates'])
 
   return {
@@ -120,16 +126,16 @@ post('/api/memories/:id/update') do |id|
   }
 end
 
-post('/api/memories/:id/undo') do |id|
-  memories[id].undo()
+post('/api/workspaces/:id/undo') do |id|
+  workspaces[id].undo()
 
   return {
     'status': 200
   }
 end
 
-post('/api/memories/:id/redo') do |id|
-  memories[id].redo()
+post('/api/workspaces/:id/redo') do |id|
+  workspaces[id].redo()
 
   return {
     'status': 200

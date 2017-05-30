@@ -439,13 +439,20 @@ module H2gb
         return get_single(block_name: block_name, address: address)[:value]
       end
 
+      # TODO: Write tests for this function
       public
       def get_all(block_name:)
         if @memory_blocks[block_name].nil?
           raise(Error, "Unknown memory block: %s" % block_name)
         end
 
-        return get(address: 0, length: @memory_blocks[block_name].raw.length, since: -1)
+        return get(block_name: block_name, address: 0, length: @memory_blocks[block_name].raw.length, since: -1)
+      end
+
+      # TODO: Write tests for this function
+      public
+      def get_memory_blocks()
+        return @memory_blocks.keys()
       end
 
       public

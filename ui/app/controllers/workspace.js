@@ -2,8 +2,8 @@ import Ember from 'ember';
 
 export default Ember.Controller.extend({
   actions: {
-    undo: function(memory_id) {
-      Ember.$.ajax('http://localhost:4567/api/memories/' + memory_id + '/undo', {
+    undo: function(workspace_id) {
+      Ember.$.ajax('http://localhost:4567/api/workspaces/' + workspace_id + '/undo', {
         data: JSON.stringify({}),
         contentType: 'application/json',
         type: 'POST',
@@ -12,8 +12,8 @@ export default Ember.Controller.extend({
       });
     },
 
-    redo: function(memory_id) {
-      Ember.$.ajax('http://localhost:4567/api/memories/' + memory_id + '/redo', {
+    redo: function(workspace_id) {
+      Ember.$.ajax('http://localhost:4567/api/workspaces/' + workspace_id + '/redo', {
         data: JSON.stringify({}),
         contentType: 'application/json',
         type: 'POST',

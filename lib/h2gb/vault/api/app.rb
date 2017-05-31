@@ -54,6 +54,7 @@ end
 
 after('/api/*') do
   response.body = JSON.pretty_generate(response.body)
+  puts response.body
 end
 
 options("*") do

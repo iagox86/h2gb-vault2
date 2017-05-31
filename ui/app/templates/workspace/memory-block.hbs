@@ -1,0 +1,5 @@
+<p>Showing memory_block {{model.name}}...</p>
+
+{{#each model.memory_block.entries as |entry|}}
+  {{memory-entry entry=entry}}
+{{/each}}

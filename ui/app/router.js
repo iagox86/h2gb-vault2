@@ -7,7 +7,9 @@ const Router = Ember.Router.extend({
 });
 
 Router.map(function() {
-  this.route('workspace', { path: '/workspaces/:workspace_id' });
+  this.route('workspace', { path: '/workspaces/:workspace_id' }, function() {
+    this.route('memory_block', { path: '/workspaces/:workspace_id/memory_blocks/:memory_block_name' });
+  });
 });
 
 export default Router;

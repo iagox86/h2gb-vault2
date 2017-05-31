@@ -45,12 +45,8 @@ get('/api/workspaces') do
 
   workspaces.each_pair do |id, workspace|
     results << {
-      type: 'workspace',
-      id: id,
-      attributes: {
-        name: id,
-        memory_blocks: workspace.get_memory_blocks()
-      }
+      name: id,
+      memoryblocks: workspace.get_memory_blocks(),
     }
   end
 
@@ -61,14 +57,8 @@ get('/api/workspaces/:id') do |id|
   id = id.to_i()
 
   return {
-    data: {
-      type: 'workspace',
-      id: id,
-      attributes: {
-        name: id,
-        memory_blocks: workspace.get_memory_blocks()
-      }
-    }
+    name: id,
+    memoryblocks: workspaces[id].get_memory_blocks(),
   }
 end
 
@@ -103,13 +93,7 @@ get('/api/workspaces/:id/memory_blocks/:name') do |id, name|
   id = id.to_i()
 
   return {
-    data: {
-      type: 'workspace',
-      id: id,
-      attributes: {
-        name: id,
-        memory_blocks: workspaces[id].get_all(block_name: name)
-      }
-    }
+    name: name,
+    memory_block: workspaces[id].get_all(block_name: name)
   }
 end

@@ -2,14 +2,19 @@
 
 <h1>Editor!</h1>
 
-{{editor-widget memory_id=model.id}}
+{{!--{{editor-widget workspace_id=model.name}}--}}
 
 <hr />
 
-<button {{action 'undo' model.id}}>Undo</button>
-<button {{action 'redo' model.id}}>Redo</button>
+<button {{action 'undo' model.name}}>Undo</button>
+<button {{action 'redo' model.name}}>Redo</button>
 
-<h1>The memory!</h1>
-{{#each model.entries as |entry|}}
-{{memory-entry entry=entry showedit='showedit'}}
-{{/each}}
+<h1>Memory blocks for {{model.name}}</h1>
+
+<ul>
+  {{#each model.memoryblocks as |block_name|}}
+    <li>{{#link-to 'workspace.memory_block' model.name block_name}}{{block_name}}{{/link-to}}</li>
+  {{/each}}
+</ul>
+
+{{outlet}}

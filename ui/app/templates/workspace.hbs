@@ -1,13 +1,13 @@
 <p>Current revision: {{model.revision}}</p>
 
-<button {{action 'undo' model.name}}>Undo</button>
-<button {{action 'redo' model.name}}>Redo</button>
+<button {{action 'undo' model.workspace_id}}>Undo</button>
+<button {{action 'redo' model.workspace_id}}>Redo</button>
 
 <h1>Memory blocks for {{model.name}}</h1>
 
 <ul>
-  {{#each model.memoryblocks as |block_name|}}
-    <li>{{#link-to 'workspace.memory_block' model.name block_name}}{{block_name}}{{/link-to}}</li>
+  {{#each model.memory_blocks as |block_name|}}
+    <li>{{#link-to 'workspace.memory_block' model.workspace_id block_name}}{{block_name}}{{/link-to}}</li>
   {{/each}}
 </ul>
 

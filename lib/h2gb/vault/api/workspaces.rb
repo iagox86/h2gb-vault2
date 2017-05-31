@@ -93,6 +93,7 @@ get('/api/workspaces/:id/memory_blocks/:name') do |id, name|
   id = id.to_i()
 
   return {
+    workspace_id: id,
     name: name,
     memory_block: workspaces[id].get_all(block_name: name)
   }

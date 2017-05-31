@@ -13,13 +13,14 @@ export default Ember.Component.extend({
         updates: [
           {
             'action': 'define_basic_type',
+            'block_name': this.get('block_name'),
             'address': parseInt(address),
             'type': type,
           }
         ]
       };
 
-      Ember.$.ajax('http://localhost:4567/api/memories/' + this.get('memory_id') + '/update', {
+      Ember.$.ajax('http://localhost:4567/api/workspaces/' + this.get('workspace_id') + '/update', {
         data: JSON.stringify(request),
         contentType: 'application/json',
         type: 'POST',

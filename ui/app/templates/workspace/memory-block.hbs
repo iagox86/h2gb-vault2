@@ -1,4 +1,8 @@
-<p>Showing memory_block {{model.name}}...</p>
+<h1>Editor!</h1>
+
+{{editor-widget workspace_id=model.workspace_id block_name=model.name}}
+
+<hr />
 
 {{#each model.memory_block.entries as |entry|}}
   {{memory-entry entry=entry}}

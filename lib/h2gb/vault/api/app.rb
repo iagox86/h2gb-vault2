@@ -12,6 +12,7 @@
 require 'base64'
 require 'json'
 require 'sinatra'
+require 'bundler/setup'
 
 $LOAD_PATH.unshift File.expand_path('../../../../', __FILE__)
 

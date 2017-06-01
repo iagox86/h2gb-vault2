@@ -1,30 +1,48 @@
-<p>Address: {{input name='address' value='0x00000000' id='editor_address'}}</p>
+<style>
+  .operations li {
+    cursor: pointer
+  }
 
-<p>Action:
-<select onchange={{action 'changeAction'}}>
-  <option value=''>Pick an action!</option>
-  <option value='define_basic_type'>Define (basic type)</option>
-  <option value='define_custom_type'>Define (custom type)</option>
-  <option value='undefine'>Undefine</option>
-  <option value='set_comment'>Set comment</option>
-  <option value='update_user_defined'>Update user_defined value</option>
-  <option value='add_refs'>Add refs</option>
-  <option value='remove_refs'>Remove refs</option>
-</select></p>
-<hr />
-{{#if (eq action 'define_basic_type')}}
-<p>
-<select id='define_basic_type_type'>
-  <option value='uint8_t'>uint8_t</option>
-  <option value='uint16_t'>uint16_t</option>
-  <option value='uint32_t'>uint32_t</option>
-  <option value='offset32'>offset32</option>
-  <option value='rgb'>rgb</option>
-  <option value='ntstring'>ntstring</option>
-</select>
-</p>
+  .operations li:hover {
+    background: pink;
+  }
 
-<p><button {{action 'go_basic_type'}}>Go!</button></p>
-{{else}}
-Action not implemented!
-{{/if}}
+  .editor-widget {
+    background: white;
+    border: 1px solid red;
+    position: absolute;
+    top: 1em;
+    left: 0;
+    z-index: 1;
+  }
+</style>
+<div class='editor-widget'>
+  <label>
+    operation:
+    <ul class='operations' onclick={{action (mut operation) value='target.dataset.value'}}>
+      <li data-value='define_basic_type'>Define (basic type)</li>
+      <li data-value='define_custom_type'>Define (custom type)</li>
+      <li data-value='undefine'>Undefine</li>
+      <li data-value='set_comment'>Set comment</li>
+      <li data-value='update_user_defined'>Update user_defined value</li>
+      <li data-value='add_refs'>Add refs</li>
+      <li data-value='remove_refs'>Remove refs</li>
+    </ul>
+  </label>
+  <hr />
+  {{#if (eq operation 'define_basic_type')}}
+    <select onchange={{action (mut type) value='target.value'}}>
+      <option disabled>-- select type --</option>
+      <option value='uint8_t'>uint8_t</option>
+      <option value='uint16_t'>uint16_t</option>
+      <option value='uint32_t'>uint32_t</option>
+      <option value='offset32'>offset32</option>
+      <option value='rgb'>rgb</option>
+      <option value='ntstring'>ntstring</option>
+    </select>
+
+    <button disabled={{hasNoType}} {{action 'updateBasicType'}}>Go!</button>
+  {{else}}
+    Action not implemented!
+  {{/if}}
+</div>

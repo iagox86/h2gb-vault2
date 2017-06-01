@@ -1,31 +1,40 @@
 import Ember from 'ember';
 
 export default Ember.Component.extend({
-  action: '',
+  dataStore: Ember.inject.service('data-store'),
+  init() {
+    this._super(...arguments);
+    this.type = 'uint8_t';
+  },
+
+  hasNoType: Ember.computed('type', function() {
+    return Ember.isBlank(this.get('type'));
+  }).readOnly(),
+
   actions: {
-    changeAction: function(self) {
-      this.set('action', self.target.value);
-    },
-    go_basic_type: function() {
-      var address = document.getElementById('editor_address').value;
-      var type = document.getElementById('define_basic_type_type').value;
-      var request = {
+    updateBasicType() {
+      let address = this.get('address');
+      let type = this.get('type');
+      let workspace_id = this.get('workspace_id');
+      let block_name = this.get('block_name');
+
+      let request = {
         updates: [
           {
-            'action': 'define_basic_type',
-            'block_name': this.get('block_name'),
-            'address': parseInt(address),
-            'type': type,
+            action: 'define_basic_type',
+            address: parseInt(address),
+            block_name,
+            type,
           }
         ]
       };
 
-      Ember.$.ajax('http://localhost:4567/api/workspaces/' + this.get('workspace_id') + '/update', {
+      Ember.$.ajax('http://localhost:4567/api/workspaces/' + workspace_id + '/update', {
         data: JSON.stringify(request),
         contentType: 'application/json',
         type: 'POST',
-      }).then(function() {
-        window.location.reload();
+      }).then(data => {
+        return this.get('dataStore').findBlock(workspace_id, block_name);
       });
     },
   }

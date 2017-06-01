@@ -1,7 +1,8 @@
 <h1>Editor!</h1>
 
 <hr />
-
 {{#each model.memory_block.entries as |entry|}}
-  {{memory-entry entry=entry}}
+  {{memory-entry entry=entry
+                 workspace_id=model.workspace_id
+                 block_name=model.block_name}}
 {{/each}}

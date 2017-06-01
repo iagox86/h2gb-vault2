@@ -32,6 +32,7 @@
   <hr />
   {{#if (eq operation 'define_basic_type')}}
     <select onchange={{action (mut type) value='target.value'}}>
+      <option disabled>-- select type --</option>
       <option value='uint8_t'>uint8_t</option>
       <option value='uint16_t'>uint16_t</option>
       <option value='uint32_t'>uint32_t</option>
@@ -40,7 +41,7 @@
       <option value='ntstring'>ntstring</option>
     </select>
 
-    <button {{action 'updateBasicType'}}>Go!</button>
+    <button disabled={{hasNoType}} {{action 'updateBasicType'}}>Go!</button>
   {{else}}
     Action not implemented!
   {{/if}}

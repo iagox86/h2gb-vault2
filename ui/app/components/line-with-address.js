@@ -7,7 +7,8 @@ export default Ember.Component.extend({
     this._super(...arguments);
     this.onBodyClick = event => {
       let target = $(event.target);
-      if (target.is('.operations') || target.is('.operations >')) {
+      if (target.is('.editor-widget') ||
+          target.closest('.editor-widget').length) {
         return;
       }
       $('body').off('click', this.onBodyClick);

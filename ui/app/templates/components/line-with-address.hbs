@@ -1,1 +1,14 @@
-<tt>{{memory-address address=address}}{{yield}}</tt><br />
+<div style="position:relative" >
+  <tt>
+    <a href="#" onclick={{action "toggle"}}>
+      {{memory-address address=address}}
+    </a>
+    {{yield}}
+  </tt>
+  {{#if open}}
+    {{editor-widget address=address
+                    workspace_id=model.workspace_id
+                    block_name=model.block_name}}
+  {{/if}}
+</div>
+

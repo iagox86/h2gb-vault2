@@ -5,7 +5,7 @@ export default Ember.Component.extend({
   tagName: '',
 
   actions: {
-    addressclick: function(address) {
+    addressclick(address) {
       Ember.$('html, body').animate({scrollTop: Ember.$('#address-' + address).offset().top + 'px'}, 'fast');
     }
   },
